@@ -1,16 +1,12 @@
-export const ejemploServicio = async () => {
-  try {
-    return {
-      json: {
-        message: "Texto ejemplo",
-        datos: usuarioDB,
-      },
-      statusCode: 200,
-    };
-  } catch (error) {
-    return {
-      json: { message: "Texto ejemplo" },
-      statusCode: 500,
-    };
-  }
+
+export const register = async ({ username, email, password }) => {
+  
+  return {
+    username,
+    email,
+  };
+};
+
+export const login = async ({ email, password }) => {
+  return "TOKEN_FAKE";
 };
