@@ -1,10 +1,17 @@
 import { Router } from "express";
-import { register, login } from "../controllers/usuariosController.js";
+import {
+  obtenerUnUsuarioController,
+  obtenerUsuariosController,
+  registrarController,
+} from "../controllers/usuariosController.js";
 import { validarToken } from "../middlewares/auth.middlewares.js";
 
 const router = Router();
 
-router.post("/register", register);
-router.post("/login", login);
+router.get("/", obtenerUsuariosController);
+
+router.post("/register", registrarController);
+
+router.get("/:id", obtenerUnUsuarioController);
 
 export default router;

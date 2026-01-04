@@ -1,21 +1,31 @@
-import * as usuariosService from "../services/usuariosServices.js";
+import { connectDB } from "../config/configDB.js";
+import {
+  obtenerUnUsuarioServices,
+  obtenerUsuariosServices,
+  register,
+} from "../services/usuariosServices.js";
 
-export const register = async (req, res) => {
-  try {
-    const user = await usuariosService.register(req.body);
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+export const obtenerUsuariosController = async (req, res) => {
+  await connectDB();
+
+  const { json, statusCode } = await obtenerUsuariosServices();
+  res.status(statusCode).json(json);
 };
 
-export const login = async (req, res) => {
-  try {
-    const token = await usuariosService.login(req.body);
-    res.json({ token });
-  } catch (error) {
-    res.status(401).json({ message: error.message });
-  }
+export const obtenerUnUsuarioController = async (req, res) => {
+  await connectDB();
+  const {id} = req.params;
+  const { json, statusCode } = await obtenerUnUsuarioServices(id);
+  res.status(statusCode).json(json);
 };
 
+export const registrarController = async (req, res) => {
+  await connectDB();
 
+  const { json, statusCode } = await register(req.body);
+  res.status(statusCode).json(json);
+};
+
+export const loginController = async (req, res) => {
+  res.status(501).json({ message: "Login no implementado aún" });
+};
