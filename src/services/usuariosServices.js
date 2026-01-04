@@ -1,5 +1,4 @@
 export const register = async ({ username, email, password }) => {
-  
   return {
     username,
     email,
