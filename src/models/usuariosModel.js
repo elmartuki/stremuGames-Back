@@ -25,7 +25,7 @@ const usuarioSchema = new Schema(
       required: true,
     },
 
-    avatar: {
+    foto_de_perfil: {
       type: String,
       default: "",
     },
