@@ -1,8 +1,11 @@
 import { connectDB } from "../config/configDB.js";
 import {
+  borrarUsuarioServices,
+  editarUsuarioServices,
+  loginServices,
   obtenerUnUsuarioServices,
   obtenerUsuariosServices,
-  register,
+  registerServices,
 } from "../services/usuariosServices.js";
 
 export const obtenerUsuariosController = async (req, res) => {
@@ -34,10 +37,13 @@ export const borrarUsuarioController = async (req, res) => {
 export const registrarController = async (req, res) => {
   await connectDB();
   const form = req.body;
-  const { json, statusCode } = await register(form);
+  const { json, statusCode } = await registerServices(form);
   res.status(statusCode).json(json);
 };
 
 export const loginController = async (req, res) => {
-  res.status(501).json({ message: "Login no implementado aún" });
+  await connectDB();
+  const usuarioFinal = req.body;
+  const { json, statusCode } = await loginServices(usuarioFinal);
+  res.status(statusCode).json(json);
 };
