@@ -6,7 +6,7 @@ export const validarToken = (req, res, next) => {
   const token = tokenCompleto.split(" ")[1];
 
   try {
-    const usuarioInfo = jwt.verify(token, process.env.SECRET_KEY);
+    const usuarioInfo = jwt.verify(token, process.env.JWT_SECRET);
 
     req.idUsuario = usuarioInfo.id || usuarioInfo._id;
     req.idCarrito = usuarioInfo.idCarrito;
