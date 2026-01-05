@@ -1,5 +1,7 @@
 import { usuarioModel } from "../models/usuariosModel.js";
 import { carritoModel } from "../models/carritoModel.js";
+import jwt from "jsonwebtoken";
+
 export const obtenerUsuariosServices = async () => {
   try {
     const usuarios = await usuarioModel.find();
@@ -20,7 +22,74 @@ export const obtenerUsuariosServices = async () => {
   }
 };
 
-export const register = async (nuevoUsuario) => {
+export const loginServices = async (usuarioFinal) => {
+  try {
+    const { usuario_email, contraseña } = usuarioFinal;
+
+    if (!usuario_email || !contraseña) {
+      return {
+        json: { message: "Todos los campos son obligatorios" },
+        statusCode: 400,
+      };
+    }
+
+    const existeUsuario = await usuarioModel.findOne({
+      $or: [
+        { email: usuario_email },
+        { nombreUsuario: usuario_email },
+      ],
+    });
+
+    if (!existeUsuario) {
+      return {
+        json: { message: "Usuario no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    if (existeUsuario.contraseña !== contraseña) {
+      return {
+        json: { message: "Contraseña incorrecta" },
+        statusCode: 401,
+      };
+    }
+
+    const token = jwt.sign(
+      {
+        id: existeUsuario._id,
+        rol: existeUsuario.rol,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    return {
+      json: {
+        message: "Ingresaste correctamente",
+        token,
+        usuario: {
+          id: existeUsuario._id,
+          nombreUsuario: existeUsuario.nombreUsuario,
+          email: existeUsuario.email,
+          rol: existeUsuario.rol,
+          foto_de_perfil: existeUsuario.foto_de_perfil,
+        },
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error al ingresar:", error);
+    return {
+      json: { message: "Error interno del servidor" },
+      statusCode: 500,
+    };
+  }
+};
+
+
+export const registerServices = async (nuevoUsuario) => {
   try {
     const existeUsuario = await usuarioModel.findOne({
       $or: [

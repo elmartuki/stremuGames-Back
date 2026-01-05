@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   borrarUsuarioController,
   editarUsuarioController,
+  loginController,
   obtenerUnUsuarioController,
   obtenerUsuariosController,
   registrarController,
@@ -19,5 +20,7 @@ router.get("/:id", obtenerUnUsuarioController);
 router.get("/:id", editarUsuarioController);
 
 router.delete("/:id", borrarUsuarioController);
+
+router.post("/login", loginController)
 
 export default router;
