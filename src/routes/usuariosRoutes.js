@@ -17,7 +17,7 @@ router.get("/", obtenerUsuariosController);
 
 router.get("/:id", obtenerUnUsuarioController);
 
-router.get("/:id", editarUsuarioController);
+router.put("/:id", editarUsuarioController);
 
 router.delete("/:id", borrarUsuarioController);
 

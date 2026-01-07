@@ -1,17 +1,8 @@
 import mongoose from "mongoose";
 
-const { Schema } = mongoose;
-
-const usuarioSchema = new Schema(
+const usuarioSchema = new mongoose.Schema(
   {
-    nombreUsuario: {
-      type: String,
-      required: true,
-      trim: true,
-      unique: true,
-      minlength: 3,
-    },
-
+    nombreUsuario: { type: String, required: true, trim: true, unique: true },
     email: {
       type: String,
       required: true,
@@ -19,45 +10,21 @@ const usuarioSchema = new Schema(
       lowercase: true,
       unique: true,
     },
-
-    contraseña: {
-      type: String,
-      required: true,
-    },
-
-    foto_de_perfil: {
-      type: String,
-      default: "",
-    },
-
+    password: { type: String, required: true },
+    foto_de_perfil: { type: String, default: "" },
+    biografia: { type: String, default: "" },
     rol: {
       type: String,
       enum: ["user", "admin", "empresa"],
       default: "user",
     },
 
-    juegosDeseados: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "juegos",
-      },
-    ],
-
-    juegosComprados: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "juegos",
-      },
-    ],
-
-    activo: {
-      type: Boolean,
-      default: true,
-    },
+    juegosSubidos: [{ type: mongoose.Schema.Types.ObjectId, ref: "juegos" }],
+    juegosDeseados: [{ type: mongoose.Schema.Types.ObjectId, ref: "juegos" }],
+    juegosComprados: [{ type: mongoose.Schema.Types.ObjectId, ref: "juegos" }],
+    activo: { type: Boolean, default: true },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export const usuarioModel = mongoose.model("usuarios", usuarioSchema);
