@@ -1,6 +1,26 @@
 import { carritoModel } from "../models/carritoModel.js";
 import { juegosModel } from "../models/juegosModel.js";
-import { usuarioModel } from "../models/usuariosModel.js";
+
+export const obtenerDatosCarritoServices = async (idUsuario) => {
+  const carrito = await carritoModel
+    .findOne({ usuarioId: idUsuario })
+    .populate("juegos.juegoId");
+
+  if (!carrito || carrito.juegos.length === 0) {
+    return {
+      json: { message: "El carrito está vacío", carrito: [] },
+      statusCode: 200,
+    };
+  }
+
+  return {
+    json: {
+      message: "Carrito obtenido correctamente",
+      carrito,
+    },
+    statusCode: 200,
+  };
+};
 
 export const agregarJuegoService = async (idJuego, idUsuario) => {
   if (!idUsuario) {
@@ -55,4 +75,39 @@ export const agregarJuegoService = async (idJuego, idUsuario) => {
     json: { message: "Juego agregado al carrito", carrito },
     statusCode: 200,
   };
+};
+
+export const eliminarJuegoCarritoServicios = async (idUsuario, idJuego) => {
+  try {
+    let carrito = await carritoModel.findOne({ usuarioId: idUsuario });
+
+    if (!carrito) {
+      return {
+        json: {
+          message: "El carrito no existe",
+        },
+        statusCode: 404,
+      };
+    }
+
+    carrito.juegos = carrito.juegos.filter((item) => {
+      return item.juegoId.toString() !== idJuego;
+    });
+
+    await carrito.save();
+
+    return {
+      json: {
+        message: "Se elimino el usuario exitosamente!!",
+        datos: carrito.juegos,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error al eliminar usuario", error);
+    return {
+      json: { message: "Error interno del servidor: " + error.message },
+      statusCode: 500,
+    };
+  }
 };
