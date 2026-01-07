@@ -87,6 +87,15 @@ const juegosSchema = new Schema(
       type: Number,
       default: 0,
     },
+    ventasTotales: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+    ingresosGenerados: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
