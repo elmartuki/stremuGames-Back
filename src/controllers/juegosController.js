@@ -3,14 +3,19 @@ import {
   agregarJuegoServices,
   editarUnJuegoServices,
   eliminarUnJuegoServices,
+  obtenerJuegosPorStudioServices,
   obtenerJuegosServices,
-  obtenerUnJuegoServices,
+  obtenerUnJuegoPorStudioServices,
 } from "../services/juegosServices.js";
 
 export const agregarJuegoController = async (req, res) => {
   await connectDB();
+  const idUsuario = req.idUsuario;
   const nuevoJuego = req.body;
-  const { json, statusCode } = await agregarJuegoServices(nuevoJuego);
+  const { json, statusCode } = await agregarJuegoServices(
+    idUsuario,
+    nuevoJuego
+  );
   res.status(statusCode).json(json);
 };
 
@@ -20,10 +25,17 @@ export const obtenerJuegosController = async (req, res) => {
   res.status(statusCode).json(json);
 };
 
-export const obtenerUnJuegoController = async (req, res) => {
+export const obtenerUnJuegoPorStudioController = async (req, res) => {
   await connectDB();
   const { id } = req.params;
-  const { json, statusCode } = await obtenerUnJuegoServices(id);
+  const { json, statusCode } = await obtenerUnJuegoPorStudioServices(id);
+  res.status(statusCode).json(json);
+};
+
+export const obtenerJuegosPorStudioController = async (req, res) => {
+  await connectDB();
+  const idUsuario = req.idUsuario;
+  const { json, statusCode } = await obtenerJuegosPorStudioServices(idUsuario);
   res.status(statusCode).json(json);
 };
 

@@ -1,29 +1,40 @@
 import { juegosModel } from "../models/juegosModel.js";
+import { usuarioModel } from "../models/usuariosModel.js";
 
-export const agregarJuegoServices = async (nuevoJuego) => {
+export const agregarJuegoServices = async (idUsuario, nuevoJuego) => {
+  const studio = await usuarioModel.findById(idUsuario);
+
+  if (!studio) {
+    return {
+      json: { message: "No se encontró el estudio" },
+      statusCode: 404,
+    };
+  }
+
   try {
-    const juegoDB = await new juegosModel(nuevoJuego);
+    const juegoDB = new juegosModel({
+      ...nuevoJuego,
+      studioId: idUsuario,
+      desarrolladora: studio.nombreUsuario,
+    });
+
     await juegoDB.save();
 
-    if (!nuevoJuego)
-      return {
-        json: {
-          message: "No se guardo",
-          datos: juegoDB,
-        },
-        statusCode: 200,
-      };
+    await usuarioModel.findByIdAndUpdate(idUsuario, {
+      $push: { juegosSubidos: juegoDB._id },
+    });
 
     return {
       json: {
-        message: "Texto ejemplo",
-        datos: nuevoJuego,
+        message: "Juego creado y vinculado al estudio correctamente",
+        datos: juegoDB,
       },
-      statusCode: 200,
+      statusCode: 201,
     };
   } catch (error) {
+    console.error("Error al agregar juego:", error);
     return {
-      json: { message: "Texto ejemplo" },
+      json: { message: "Error interno al intentar guardar el juego" },
       statusCode: 500,
     };
   }
@@ -49,19 +60,53 @@ export const obtenerJuegosServices = async () => {
   }
 };
 
-export const obtenerUnJuegoServices = async (id) => {
+export const obtenerUnJuegoPorStudioServices = async (id) => {
   try {
     const juego = await juegosModel.findById(id);
 
+    if (!juego) {
+      return {
+        json: { message: "No se encontro ningun juego." },
+        statusCode: 404,
+      };
+    }
+
     return {
       json: {
-        message: "Juego obtenido correctamente",
+        message: "Juegos del estudio obtenidos con éxito",
         datos: juego,
       },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error al obtener juegos:", error);
+    console.error("Error al obtener juegos del estudio:", error);
+    return {
+      json: { message: "Error interno del servidor" },
+      statusCode: 500,
+    };
+  }
+};
+
+export const obtenerJuegosPorStudioServices = async (idUsuario) => {
+  try {
+    const juegos = await juegosModel.find({ studioId: idUsuario });
+
+    if (!juegos || juegos.length === 0) {
+      return {
+        json: { message: "Este estudio aún no tiene juegos publicados" },
+        statusCode: 404,
+      };
+    }
+
+    return {
+      json: {
+        message: "Juegos del estudio obtenidos con éxito",
+        datos: juegos,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error al obtener juegos del estudio:", error);
     return {
       json: { message: "Error interno del servidor" },
       statusCode: 500,
