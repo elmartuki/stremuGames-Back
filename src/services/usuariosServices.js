@@ -22,112 +22,60 @@ export const obtenerUsuariosServices = async () => {
   }
 };
 
-export const loginServices = async (usuarioFinal) => {
+export const registerServices = async (datos) => {
   try {
-    const { usuario_email, contraseña } = usuarioFinal;
-
-    if (!usuario_email || !contraseña) {
-      return {
-        json: { message: "Todos los campos son obligatorios" },
-        statusCode: 400,
-      };
-    }
-
-    const existeUsuario = await usuarioModel.findOne({
-      $or: [
-        { email: usuario_email },
-        { nombreUsuario: usuario_email },
-      ],
+    const existe = await usuarioModel.findOne({
+      $or: [{ email: datos.email }, { nombreUsuario: datos.nombreUsuario }],
     });
 
-    if (!existeUsuario) {
-      return {
-        json: { message: "Usuario no encontrado" },
-        statusCode: 404,
-      };
-    }
+    if (existe)
+      return { json: { message: "El usuario ya existe" }, statusCode: 400 };
 
-    if (existeUsuario.contraseña !== contraseña) {
-      return {
-        json: { message: "Contraseña incorrecta" },
-        statusCode: 401,
-      };
+    const usuarioDB = new usuarioModel(datos);
+    await usuarioDB.save();
+
+    return {
+      json: { message: "Registrado con éxito", datos: usuarioDB },
+      statusCode: 201,
+    };
+  } catch (error) {
+    return { json: { message: "Error en el servidor" }, statusCode: 500 };
+  }
+};
+
+export const loginServices = async (datos) => {
+  try {
+    const { usuario_email, password } = datos;
+
+    const usuario = await usuarioModel.findOne({
+      $or: [{ email: usuario_email }, { nombreUsuario: usuario_email }],
+    });
+
+    if (!usuario || usuario.password !== password) {
+      return { json: { message: "Credenciales inválidas" }, statusCode: 401 };
     }
 
     const token = jwt.sign(
-      {
-        id: existeUsuario._id,
-        rol: existeUsuario.rol,
-      },
+      { id: usuario._id, rol: usuario.rol },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
+      { expiresIn: "7d" }
     );
 
     return {
       json: {
-        message: "Ingresaste correctamente",
+        message: "Login exitoso",
         token,
         usuario: {
-          id: existeUsuario._id,
-          nombreUsuario: existeUsuario.nombreUsuario,
-          email: existeUsuario.email,
-          rol: existeUsuario.rol,
-          foto_de_perfil: existeUsuario.foto_de_perfil,
+          id: usuario._id,
+          nombreUsuario: usuario.nombreUsuario,
+          rol: usuario.rol,
+          foto_de_perfil: usuario.foto_de_perfil,
         },
       },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error al ingresar:", error);
-    return {
-      json: { message: "Error interno del servidor" },
-      statusCode: 500,
-    };
-  }
-};
-
-
-export const registerServices = async (nuevoUsuario) => {
-  try {
-    const existeUsuario = await usuarioModel.findOne({
-      $or: [
-        { email: nuevoUsuario.email },
-        { nombreUsuario: nuevoUsuario.nombreUsuario },
-      ],
-    });
-
-    if (existeUsuario) {
-      return {
-        json: { message: "El usuario o email ya existe" },
-        statusCode: 400,
-      };
-    }
-
-    const usuarioDB = new usuarioModel(nuevoUsuario);
-    await usuarioDB.save();
-
-    const carrito = new carritoModel({
-      usuarioId: usuarioDB._id,
-      juegos: [],
-      total: 0,
-    });
-    await carrito.save();
-
-    return {
-      json: {
-        message: "Usuario registrado correctamente",
-        datos: usuarioDB,
-      },
-      statusCode: 201,
-    };
-  } catch (error) {
-    console.error("Error al registrar usuario:", error);
-    return {
-      json: { message: "Error interno del servidor" },
-      statusCode: 500,
-    };
+    return { json: { message: "Error en login" }, statusCode: 500 };
   }
 };
 

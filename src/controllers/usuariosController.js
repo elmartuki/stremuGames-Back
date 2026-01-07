@@ -25,8 +25,9 @@ export const obtenerUnUsuarioController = async (req, res) => {
 export const editarUsuarioController = async (req, res) => {
   await connectDB();
   const { id } = req.params;
-  const { json, statusCode } = await editarUsuarioServices(id);
-  res.status(statuscode).json(json);
+  const data = req.body;
+  const { json, statusCode } = await editarUsuarioServices(id, data);
+  res.status(statusCode).json(json);
 };
 export const borrarUsuarioController = async (req, res) => {
   await connectDB();
