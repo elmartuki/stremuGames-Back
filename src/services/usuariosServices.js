@@ -34,11 +34,20 @@ export const registerServices = async (datos) => {
     const usuarioDB = new usuarioModel(datos);
     await usuarioDB.save();
 
+    const nuevoCarrito = new carritoModel({
+      idUsuario: usuarioDB._id,
+      juegos: [],
+      total: 0,
+    });
+
+    await nuevoCarrito.save();
+
     return {
       json: { message: "Registrado con éxito", datos: usuarioDB },
       statusCode: 201,
     };
   } catch (error) {
+    console.error(error);
     return { json: { message: "Error en el servidor" }, statusCode: 500 };
   }
 };

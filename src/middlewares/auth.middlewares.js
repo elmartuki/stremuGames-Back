@@ -1,25 +1,32 @@
 import jwt from "jsonwebtoken";
 
 export const validarToken = (req, res, next) => {
-  const tokenCompleto = req.headers.authorization;
-
-  const token = tokenCompleto.split(" ")[1];
-
   try {
+    const tokenCompleto = req.headers.authorization;
+
+    if (!tokenCompleto || !tokenCompleto.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({ message: "Acceso denegado. Token no proporcionado." });
+    }
+
+    const token = tokenCompleto.split(" ")[1];
+
     const usuarioInfo = jwt.verify(token, process.env.JWT_SECRET);
 
     req.idUsuario = usuarioInfo.id || usuarioInfo._id;
-    req.idCarrito = usuarioInfo.idCarrito;
-
     req.rol = usuarioInfo.rol;
 
     if (!req.idUsuario) {
-      throw new Error("ID de usuario faltante en el token JWT.");
+      return res
+        .status(403)
+        .json({ message: "Token válido pero sin ID de usuario." });
     }
 
     next();
   } catch (error) {
-    console.error("Error de verificación del token:", error.message);
+    console.error("Error en validación de token:", error.message);
+
     return res.status(401).json({ message: "Token inválido o expirado." });
   }
 };

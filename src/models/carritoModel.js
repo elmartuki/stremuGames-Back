@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 
 const carritoSchema = new Schema(
   {
-    usuarioId: {
+    idUsuario: {
       type: Schema.Types.ObjectId,
       ref: "usuarios",
       required: true,

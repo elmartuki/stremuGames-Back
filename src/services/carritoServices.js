@@ -1,9 +1,10 @@
 import { carritoModel } from "../models/carritoModel.js";
 import { juegosModel } from "../models/juegosModel.js";
+import { usuarioModel } from "../models/usuariosModel.js";
 
 export const obtenerDatosCarritoServices = async (idUsuario) => {
   const carrito = await carritoModel
-    .findOne({ usuarioId: idUsuario })
+    .findOne({ idUsuario: idUsuario })
     .populate("juegos.juegoId");
 
   if (!carrito || carrito.juegos.length === 0) {
@@ -30,6 +31,18 @@ export const agregarJuegoService = async (idJuego, idUsuario) => {
     };
   }
 
+  const usuario = await usuarioModel.findById(idUsuario);
+
+  if (
+    usuario &&
+    usuario.juegosComprados.some((id) => id.toString() === idJuego)
+  ) {
+    return {
+      json: { message: "¡Ya tienes este juego en tu biblioteca!" },
+      statusCode: 200,
+    };
+  }
+
   const juego = await juegosModel.findById(idJuego);
 
   if (!juego) {
@@ -39,11 +52,11 @@ export const agregarJuegoService = async (idJuego, idUsuario) => {
     };
   }
 
-  let carrito = await carritoModel.findOne({ usuarioId: idUsuario });
+  let carrito = await carritoModel.findOne({ idUsuario: idUsuario });
 
   if (!carrito) {
     carrito = new carritoModel({
-      usuarioId: idUsuario,
+      idUsuario: idUsuario,
       juegos: [],
     });
   }
@@ -79,7 +92,7 @@ export const agregarJuegoService = async (idJuego, idUsuario) => {
 
 export const eliminarJuegoCarritoServicios = async (idUsuario, idJuego) => {
   try {
-    let carrito = await carritoModel.findOne({ usuarioId: idUsuario });
+    let carrito = await carritoModel.findOne({ idUsuario: idUsuario });
 
     if (!carrito) {
       return {
@@ -98,13 +111,13 @@ export const eliminarJuegoCarritoServicios = async (idUsuario, idJuego) => {
 
     return {
       json: {
-        message: "Se elimino el usuario exitosamente!!",
+        message: "Se elimino el juego exitosamente!!",
         datos: carrito.juegos,
       },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error al eliminar usuario", error);
+    console.error("Error al eliminar juego del carrito", error);
     return {
       json: { message: "Error interno del servidor: " + error.message },
       statusCode: 500,
