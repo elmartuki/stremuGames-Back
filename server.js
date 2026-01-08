@@ -14,6 +14,7 @@ const allowedOrigins = [
   "http://192.168.1.247:5173",
   "http://10.241.74.41:5173",
   "http://192.168.100.12:5173",
+  "https://stremugames.vercel.app",
 ];
 
 const corsOptions = {
@@ -27,9 +28,5 @@ app.use(helmet());
 app.use(cors(corsOptions));
 
 app.use("/api", routes);
-
-app.listen(3000, () => {
-  console.log("Servidor corriendo en el puerto 3000");
-});
 
 export default app;
