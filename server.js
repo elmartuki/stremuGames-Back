@@ -14,6 +14,7 @@ const allowedOrigins = [
   "http://192.168.1.247:5173",
   "http://10.241.74.41:5173",
   "http://192.168.100.12:5173",
+  "https://stremugames.vercel.app",
 ];
 
 const corsOptions = {
