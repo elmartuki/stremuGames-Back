@@ -43,8 +43,14 @@ export const registrarController = async (req, res) => {
 };
 
 export const loginController = async (req, res) => {
-  await connectDB();
-  const usuarioFinal = req.body;
-  const { json, statusCode } = await loginServices(usuarioFinal);
-  res.status(statusCode).json(json);
+  try {
+    const resultado = await loginServices(req.body);
+
+    return res.status(resultado.statusCode).json(resultado.json);
+  } catch (error) {
+    console.error("Error en loginUsuario:", error);
+    return res.status(500).json({
+      message: "Error interno del servidor",
+    });
+  }
 };
