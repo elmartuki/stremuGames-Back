@@ -28,5 +28,9 @@ app.use(helmet());
 app.use(cors(corsOptions));
 
 app.use("/api", routes);
-app.listen(3000, () => console.log("servidor corriendo en el puerto 3000"));
+
+app.listen(3000, () => {
+  console.log("servidor corriend en el puerto 3000");
+});
+
 export default app;

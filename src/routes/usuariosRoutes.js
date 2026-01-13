@@ -5,13 +5,13 @@ import {
   loginController,
   obtenerUnUsuarioController,
   obtenerUsuariosController,
-  registrarController,
+  registrarUsuarioController,
 } from "../controllers/usuariosController.js";
 import { validarToken } from "../middlewares/auth.middlewares.js";
 
 const router = Router();
 
-router.post("/register", registrarController);
+router.post("/register", registrarUsuarioController);
 
 router.get("/", obtenerUsuariosController);
 
@@ -21,6 +21,6 @@ router.put("/:id", editarUsuarioController);
 
 router.delete("/:id", borrarUsuarioController);
 
-router.post("/login", loginController)
+router.post("/login", loginController);
 
 export default router;

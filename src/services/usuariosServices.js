@@ -29,6 +29,8 @@ export const registerServices = async (datos) => {
       $or: [{ email: datos.email }, { nombreUsuario: datos.nombreUsuario }],
     });
 
+    if (existe)
+      return { json: { message: "El nombre de usuario o el correo electrónico ya están registrados" }, statusCode: 400 };
     if (existe) {
       return {
         json: { message: "El usuario ya existe" },
