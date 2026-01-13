@@ -35,10 +35,10 @@ export const borrarUsuarioController = async (req, res) => {
   const { json, statusCode } = await borrarUsuarioServices(id);
   res.status(statusCode).json(json);
 };
-export const registrarController = async (req, res) => {
+export const registrarUsuarioController = async (req, res) => {
   await connectDB();
-  const form = req.body;
-  const { json, statusCode } = await registerServices(form);
+  const datos = req.body;
+  const { json, statusCode } = await registerServices(datos);
   res.status(statusCode).json(json);
 };
 

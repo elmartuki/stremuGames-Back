@@ -29,7 +29,7 @@ export const registerServices = async (datos) => {
     });
 
     if (existe)
-      return { json: { message: "El usuario ya existe" }, statusCode: 400 };
+      return { json: { message: "El nombre de usuario o el correo electrónico ya están registrados" }, statusCode: 400 };
 
     const usuarioDB = new usuarioModel(datos);
     await usuarioDB.save();
