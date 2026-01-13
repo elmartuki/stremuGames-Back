@@ -1,5 +1,6 @@
 import { usuarioModel } from "../models/usuariosModel.js";
 import { carritoModel } from "../models/carritoModel.js";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 export const obtenerUsuariosServices = async () => {
@@ -30,8 +31,22 @@ export const registerServices = async (datos) => {
 
     if (existe)
       return { json: { message: "El nombre de usuario o el correo electrónico ya están registrados" }, statusCode: 400 };
+    if (existe) {
+      return {
+        json: { message: "El usuario ya existe" },
+        statusCode: 400,
+      };
+    }
 
-    const usuarioDB = new usuarioModel(datos);
+    const salt = await bcrypt.genSalt(10);
+    const passwordHasheada = await bcrypt.hash(datos.password, salt);
+
+    const usuarioDB = new usuarioModel({
+      nombreUsuario: datos.nombreUsuario,
+      email: datos.email,
+      password: passwordHasheada,
+    });
+
     await usuarioDB.save();
 
     const nuevoCarrito = new carritoModel({
@@ -43,12 +58,15 @@ export const registerServices = async (datos) => {
     await nuevoCarrito.save();
 
     return {
-      json: { message: "Registrado con éxito", datos: usuarioDB },
+      json: { message: "Registrado con éxito" },
       statusCode: 201,
     };
   } catch (error) {
-    console.error(error);
-    return { json: { message: "Error en el servidor" }, statusCode: 500 };
+    console.error("Error en registerServices:", error);
+    return {
+      json: { message: "Error interno del servidor" },
+      statusCode: 500,
+    };
   }
 };
 
@@ -56,21 +74,46 @@ export const loginServices = async (datos) => {
   try {
     const { usuario_email, password } = datos;
 
-    const usuario = await usuarioModel.findOne({
-      $or: [{ email: usuario_email }, { nombreUsuario: usuario_email }],
-    });
+    if (!usuario_email || !password) {
+      return {
+        statusCode: 400,
+        json: { message: "Todos los campos son obligatorios" },
+      };
+    }
 
-    if (!usuario || usuario.password !== password) {
-      return { json: { message: "Credenciales inválidas" }, statusCode: 401 };
+    const usuario = await usuarioModel
+      .findOne({
+        $or: [{ email: usuario_email }, { nombreUsuario: usuario_email }],
+      })
+      .select("+password");
+
+    if (!usuario || !usuario.activo) {
+      return {
+        statusCode: 401,
+        json: { message: "Credenciales inválidas" },
+      };
+    }
+
+    const passwordValida = await bcrypt.compare(password, usuario.password);
+
+    if (!passwordValida) {
+      return {
+        statusCode: 401,
+        json: { message: "Credenciales inválidas" },
+      };
     }
 
     const token = jwt.sign(
-      { id: usuario._id, rol: usuario.rol },
+      {
+        id: usuario._id,
+        rol: usuario.rol,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
     return {
+      statusCode: 200,
       json: {
         message: "Login exitoso",
         token,
@@ -81,10 +124,13 @@ export const loginServices = async (datos) => {
           foto_de_perfil: usuario.foto_de_perfil,
         },
       },
-      statusCode: 200,
     };
   } catch (error) {
-    return { json: { message: "Error en login" }, statusCode: 500 };
+    console.error("Error en loginServices:", error);
+    return {
+      statusCode: 500,
+      json: { message: "Error interno del servidor" },
+    };
   }
 };
 
