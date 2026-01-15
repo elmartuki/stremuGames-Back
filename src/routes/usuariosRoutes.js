@@ -3,6 +3,7 @@ import {
   borrarUsuarioController,
   editarUsuarioController,
   loginController,
+  obtenerJuegosCompradosController,
   obtenerUnUsuarioController,
   obtenerUsuariosController,
   registrarUsuarioController,
@@ -13,6 +14,10 @@ const router = Router();
 
 router.post("/register", registrarUsuarioController);
 
+router.get("/biblioteca", validarToken, obtenerJuegosCompradosController);
+
+router.post("/login", loginController);
+
 router.get("/", obtenerUsuariosController);
 
 router.get("/:id", obtenerUnUsuarioController);
@@ -20,7 +25,5 @@ router.get("/:id", obtenerUnUsuarioController);
 router.put("/:id", editarUsuarioController);
 
 router.delete("/:id", borrarUsuarioController);
-
-router.post("/login", loginController);
 
 export default router;

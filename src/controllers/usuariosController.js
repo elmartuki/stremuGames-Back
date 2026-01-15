@@ -3,6 +3,7 @@ import {
   borrarUsuarioServices,
   editarUsuarioServices,
   loginServices,
+  obtenerJuegosCompradosServices,
   obtenerUnUsuarioServices,
   obtenerUsuariosServices,
   registerServices,
@@ -53,4 +54,13 @@ export const loginController = async (req, res) => {
       message: "Error interno del servidor",
     });
   }
+};
+
+export const obtenerJuegosCompradosController = async (req, res) => {
+  await connectDB();
+
+  const idUsuario = req.idUsuario;
+  const { json, statusCode } = await obtenerJuegosCompradosServices(idUsuario);
+
+  res.status(statusCode).json(json);
 };
