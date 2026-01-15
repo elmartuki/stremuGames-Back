@@ -30,7 +30,13 @@ export const registerServices = async (datos) => {
     });
 
     if (existe)
-      return { json: { message: "El nombre de usuario o el correo electrónico ya están registrados" }, statusCode: 400 };
+      return {
+        json: {
+          message:
+            "El nombre de usuario o el correo electrónico ya están registrados",
+        },
+        statusCode: 400,
+      };
     if (existe) {
       return {
         json: { message: "El usuario ya existe" },
@@ -217,4 +223,26 @@ export const borrarUsuarioServices = async (id) => {
       statusCode: 500,
     };
   }
+};
+
+
+
+export const obtenerJuegosCompradosServices = async (idUsuario) => {
+  const usuario = await usuarioModel
+    .findById(idUsuario)
+    .populate("juegosComprados");
+
+  if (!usuario) {
+    return {
+      statusCode: 404,
+      json: { message: "Usuario no encontrado" },
+    };
+  }
+
+  return {
+    statusCode: 200,
+    json: {
+      juegos: usuario.juegosComprados,
+    },
+  };
 };
