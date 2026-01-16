@@ -44,16 +44,10 @@ export const registrarUsuarioController = async (req, res) => {
 };
 
 export const loginController = async (req, res) => {
-  try {
-    const resultado = await loginServices(req.body);
+  await connectDB();
 
-    return res.status(resultado.statusCode).json(resultado.json);
-  } catch (error) {
-    console.error("Error en loginUsuario:", error);
-    return res.status(500).json({
-      message: "Error interno del servidor",
-    });
-  }
+  const { json, statusCode } = await loginServices(req.body);
+  res.status(statusCode).json(json);
 };
 
 export const obtenerJuegosCompradosController = async (req, res) => {
