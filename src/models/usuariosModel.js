@@ -32,6 +32,11 @@ const usuarioSchema = new mongoose.Schema(
       default: "",
     },
 
+    foto_banner: {
+      type: String,
+      default: "",
+    },
+
     biografia: {
       type: String,
       maxlength: 160,
@@ -58,7 +63,7 @@ const usuarioSchema = new mongoose.Schema(
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
 export const usuarioModel = mongoose.model("usuarios", usuarioSchema);
