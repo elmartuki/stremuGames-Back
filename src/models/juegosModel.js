@@ -35,6 +35,11 @@ const juegosSchema = new Schema(
       required: true,
     },
 
+    galeria: {
+      type: [String],
+      default: [],
+    },
+
     categorias: [
       {
         type: String,
@@ -99,7 +104,7 @@ const juegosSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export const juegosModel = mongoose.model("juegos", juegosSchema);
