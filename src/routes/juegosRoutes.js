@@ -4,6 +4,7 @@ import {
   agregarJuegoController,
   editarUnJuegoController,
   eliminarUnJuegoController,
+  gestionarVisualizacionController,
   obtenerJuegosController,
   obtenerJuegosPorStudioController,
   obtenerUnJuegoPorStudioController,
@@ -22,5 +23,7 @@ router.put("/:id", editarUnJuegoController);
 router.post("/crear", validarToken, agregarJuegoController);
 
 router.delete("/:id", eliminarUnJuegoController);
+
+router.put("/estado/:id", gestionarVisualizacionController);
 
 export default router;

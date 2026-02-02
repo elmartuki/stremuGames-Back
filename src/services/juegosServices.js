@@ -42,7 +42,7 @@ export const agregarJuegoServices = async (idUsuario, nuevoJuego) => {
 
 export const obtenerJuegosServices = async () => {
   try {
-    const juegos = await juegosModel.find();
+    const juegos = await juegosModel.find({ mostrar: true });
 
     return {
       json: {
@@ -163,6 +163,37 @@ export const eliminarUnJuegoServices = async (id) => {
     };
   } catch (error) {
     console.error("Error al editar juego:", error);
+    return {
+      json: { message: "Error interno del servidor: " + error.message },
+      statusCode: 500,
+    };
+  }
+};
+
+export const gestionarVisualizacionServices = async (id) => {
+  try {
+    const juego = await juegosModel.findById(id);
+
+    if (!juego) {
+      return {
+        json: { message: "No se encontró el juego con ese ID" },
+        statusCode: 404,
+      };
+    }
+
+    juego.mostrar = !juego.mostrar;
+
+    const juegoActualizado = await juego.save();
+
+    return {
+      json: {
+        message: "Estado de visualización actualizado con éxito",
+        datos: juegoActualizado,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error en el servidor:", error);
     return {
       json: { message: "Error interno del servidor: " + error.message },
       statusCode: 500,

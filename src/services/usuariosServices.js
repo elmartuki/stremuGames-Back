@@ -51,6 +51,7 @@ export const registerServices = async (datos) => {
       nombreUsuario: datos.nombreUsuario,
       email: datos.email,
       password: passwordHasheada,
+      rol: datos.rol,
     });
 
     await usuarioDB.save();
@@ -115,7 +116,7 @@ export const loginServices = async (datos) => {
         rol: usuario.rol,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     return {
@@ -225,8 +226,6 @@ export const borrarUsuarioServices = async (id) => {
   }
 };
 
-
-
 export const obtenerJuegosCompradosServices = async (idUsuario) => {
   const usuario = await usuarioModel
     .findById(idUsuario)
@@ -245,4 +244,44 @@ export const obtenerJuegosCompradosServices = async (idUsuario) => {
       juegos: usuario.juegosComprados,
     },
   };
+};
+
+export const sistemaDeBaneoServices = async (id) => {
+  try {
+    const usuario = await usuarioModel.findById(id);
+
+    if (!usuario) {
+      return {
+        json: { message: "Usuario no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    if (usuario.rol === "admin") {
+      return {
+        json: { message: "No puedes banear a un administrador" },
+        statusCode: 403,
+      };
+    }
+
+    usuario.activo = !usuario.activo;
+
+    const usuarioActualizado = await usuario.save();
+
+    const accion = usuarioActualizado.activo ? "desbaneado" : "baneado";
+
+    return {
+      json: {
+        message: `Usuario ${accion} exitosamente`,
+        datos: usuarioActualizado,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error en sistemaDeBaneo:", error);
+    return {
+      json: { message: "Error interno del servidor: " + error.message },
+      statusCode: 500,
+    };
+  }
 };

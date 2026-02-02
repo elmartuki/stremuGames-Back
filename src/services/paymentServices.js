@@ -26,15 +26,8 @@ export const createPreferenceServicio = async (idUsuario, body) => {
       (item) =>
         item.title &&
         Number(item.unit_price) > 0 &&
-        !isNaN(Number(item.unit_price))
+        !isNaN(Number(item.unit_price)),
     );
-
-    if (itemsValidos.length === 0) {
-      return {
-        statusCode: 400,
-        json: { error: "Monto inválido" },
-      };
-    }
 
     const preference = new Preference(client);
 
@@ -52,7 +45,8 @@ export const createPreferenceServicio = async (idUsuario, body) => {
           pending: `${process.env.URL_FRONTEND}/carrito`,
         },
         auto_return: "approved",
-        external_reference: `${idUsuario}-${Date.now()}`,
+
+        external_reference: String(idUsuario),
 
         notification_url: `${process.env.URL_FRONTEND}/api/payment/webhook`,
       },
@@ -82,9 +76,16 @@ export const webhookServicio = async (body) => {
     const payment = new Payment(client);
     const result = await payment.get({ id: paymentId });
 
-    if (result.status !== "approved") return { statusCode: 200 };
+    if (result.status !== "approved") {
+      console.log(`⚠️ Pago ${paymentId} no aprobado: ${result.status}`);
+      return { statusCode: 200 };
+    }
 
-    const [userId] = result.external_reference.split("-");
+    const userId = result.external_reference;
+    if (!userId) {
+      console.error("❌ No se encontró userId en external_reference");
+      return { statusCode: 200 };
+    }
 
     const existe = await PedidoModel.findOne({
       paymentId: paymentId.toString(),
@@ -96,7 +97,7 @@ export const webhookServicio = async (body) => {
       .populate("juegos.juegoId");
 
     if (!carrito || carrito.juegos.length === 0) {
-      console.log("⚠️ Carrito vacío o inexistente");
+      console.log("⚠️ Carrito vacío al procesar el pago");
       return { statusCode: 200 };
     }
 
@@ -105,13 +106,16 @@ export const webhookServicio = async (body) => {
         await juegosModel.findByIdAndUpdate(item.juegoId._id, {
           $inc: {
             ventasTotales: 1,
-            ingresosGenerados: item.precio,
+            ingresosGenerados: Number(item.precio),
           },
         });
       }
     }
 
-    const idsJuegosComprados = carrito.juegos.map((item) => item.juegoId._id);
+    const idsJuegosComprados = carrito.juegos
+      .filter((item) => item.juegoId)
+      .map((item) => item.juegoId._id);
+
     await usuarioModel.findByIdAndUpdate(userId, {
       $addToSet: { juegosComprados: { $each: idsJuegosComprados } },
     });
@@ -119,10 +123,10 @@ export const webhookServicio = async (body) => {
     const nuevoPedido = new PedidoModel({
       idUsuario: userId,
       paymentId: paymentId.toString(),
-      total: result.transaction_amount,
+      total: Number(result.transaction_amount),
       juegos: carrito.juegos.map((j) => ({
         idJuego: j.juegoId?._id,
-        titulo: j.titulo,
+        titulo: j.juegoId?.titulo || "Juego",
         precio: j.precio,
       })),
       estado: "approved",
@@ -134,10 +138,13 @@ export const webhookServicio = async (body) => {
     carrito.total = 0;
     await carrito.save();
 
-    console.log(`✅ Pago ${paymentId} procesado. Carrito vaciado.`);
+    console.log(
+      `✅ Pago ${paymentId} procesado con éxito para usuario ${userId}`,
+    );
     return { statusCode: 200 };
   } catch (error) {
     console.error("❌ Error en webhook:", error);
+
     return { statusCode: 500 };
   }
 };

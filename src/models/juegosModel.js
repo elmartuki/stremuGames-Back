@@ -4,6 +4,12 @@ const { Schema } = mongoose;
 
 const juegosSchema = new Schema(
   {
+    mostrar: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+
     titulo: {
       type: String,
       required: true,
@@ -31,6 +37,11 @@ const juegosSchema = new Schema(
     },
 
     imagenPortada: {
+      type: String,
+      required: true,
+    },
+
+    imagenBanner: {
       type: String,
       required: true,
     },
