@@ -3,6 +3,7 @@ import {
   agregarJuegoServices,
   editarUnJuegoServices,
   eliminarUnJuegoServices,
+  gestionarVisualizacionServices,
   obtenerJuegosPorStudioServices,
   obtenerJuegosServices,
   obtenerUnJuegoPorStudioServices,
@@ -14,7 +15,7 @@ export const agregarJuegoController = async (req, res) => {
   const nuevoJuego = req.body;
   const { json, statusCode } = await agregarJuegoServices(
     idUsuario,
-    nuevoJuego
+    nuevoJuego,
   );
   res.status(statusCode).json(json);
 };
@@ -51,5 +52,12 @@ export const eliminarUnJuegoController = async (req, res) => {
   await connectDB();
   const { id } = req.params;
   const { json, statusCode } = await eliminarUnJuegoServices(id);
+  res.status(statusCode).json(json);
+};
+
+export const gestionarVisualizacionController = async (req, res) => {
+  await connectDB();
+  const { id } = req.params;
+  const { json, statusCode } = await gestionarVisualizacionServices(id);
   res.status(statusCode).json(json);
 };

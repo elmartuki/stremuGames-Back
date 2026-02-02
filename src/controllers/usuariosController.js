@@ -7,6 +7,7 @@ import {
   obtenerUnUsuarioServices,
   obtenerUsuariosServices,
   registerServices,
+  sistemaDeBaneoServices,
 } from "../services/usuariosServices.js";
 
 export const obtenerUsuariosController = async (req, res) => {
@@ -55,6 +56,15 @@ export const obtenerJuegosCompradosController = async (req, res) => {
 
   const idUsuario = req.idUsuario;
   const { json, statusCode } = await obtenerJuegosCompradosServices(idUsuario);
+
+  res.status(statusCode).json(json);
+};
+
+export const sistemaDeBaneoController = async (req, res) => {
+  await connectDB();
+
+  const { id } = req.params;
+  const { json, statusCode } = await sistemaDeBaneoServices(id);
 
   res.status(statusCode).json(json);
 };
