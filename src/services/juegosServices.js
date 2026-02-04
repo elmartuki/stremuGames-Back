@@ -200,3 +200,89 @@ export const gestionarVisualizacionServices = async (id) => {
     };
   }
 };
+
+export const gestionarFavoritosServices = async (idJuego, idUsuario) => {
+  try {
+    const juego = await juegosModel.findById(idJuego);
+
+    if (!juego) {
+      return {
+        json: { message: "Juego no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    const yaTieneLike = juego.usuarios_likes.some(
+      (likeId) => String(likeId) === String(idUsuario),
+    );
+
+    let juegoActualizado;
+    let esFavoritoFinal;
+
+    if (yaTieneLike) {
+      await usuarioModel.findByIdAndUpdate(idUsuario, {
+        $pull: { favoritos: idJuego },
+      });
+
+      juegoActualizado = await juegosModel.findByIdAndUpdate(
+        idJuego,
+        { $pull: { usuarios_likes: idUsuario } },
+        { new: true },
+      );
+
+      esFavoritoFinal = false;
+    } else {
+      await usuarioModel.findByIdAndUpdate(idUsuario, {
+        $addToSet: { favoritos: idJuego },
+      });
+
+      juegoActualizado = await juegosModel.findByIdAndUpdate(
+        idJuego,
+        { $addToSet: { usuarios_likes: idUsuario } },
+        { new: true },
+      );
+
+      esFavoritoFinal = true;
+    }
+
+    return {
+      json: {
+        message: esFavoritoFinal
+          ? "Agregado a favoritos"
+          : "Eliminado de favoritos",
+        esFavorito: esFavoritoFinal,
+        cantidadFavoritos: juegoActualizado.usuarios_likes.length,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error favoritos:", error);
+    return {
+      json: { message: "Error interno del servidor" },
+      statusCode: 500,
+    };
+  }
+};
+
+export const verificarEstadoFavoritoService = async (idJuego, idUsuario) => {
+  try {
+    const juego = await juegosModel.findById(idJuego);
+
+    if (!juego) {
+      return { json: { esFavorito: false }, statusCode: 404 };
+    }
+
+    const esFavorito = juego.usuarios_likes.some(
+      (likeId) => String(likeId) === String(idUsuario),
+    );
+
+    return {
+      json: { esFavorito },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error verificando favorito:", error);
+
+    return { json: { esFavorito: false }, statusCode: 500 };
+  }
+};

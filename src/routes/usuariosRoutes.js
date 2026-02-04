@@ -2,12 +2,14 @@ import { Router } from "express";
 import {
   borrarUsuarioController,
   editarUsuarioController,
+  gestionarSeguidoresController,
   loginController,
   obtenerJuegosCompradosController,
   obtenerUnUsuarioController,
   obtenerUsuariosController,
   registrarUsuarioController,
   sistemaDeBaneoController,
+  verificarSeguimientoController,
 } from "../controllers/usuariosController.js";
 import { validarToken } from "../middlewares/auth.middlewares.js";
 
@@ -22,6 +24,14 @@ router.post("/login", loginController);
 router.get("/", obtenerUsuariosController);
 
 router.get("/:id", obtenerUnUsuarioController);
+
+router.put("/seguir/:id", validarToken, gestionarSeguidoresController);
+
+router.get(
+  "/seguir/verificar/:id",
+  validarToken,
+  verificarSeguimientoController,
+);
 
 router.put("/:id", editarUsuarioController);
 

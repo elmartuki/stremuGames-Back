@@ -4,26 +4,32 @@ import {
   agregarJuegoController,
   editarUnJuegoController,
   eliminarUnJuegoController,
+  gestionarFavoritosController,
   gestionarVisualizacionController,
   obtenerJuegosController,
   obtenerJuegosPorStudioController,
   obtenerUnJuegoPorStudioController,
+  verificarEstadoFavoritoController,
 } from "../controllers/juegosController.js";
 
 const router = Router();
 
 router.get("/", obtenerJuegosController);
-
 router.get("/juegos-subidos", validarToken, obtenerJuegosPorStudioController);
-
-router.get("/:id", validarToken, obtenerUnJuegoPorStudioController);
-
-router.put("/:id", editarUnJuegoController);
-
 router.post("/crear", validarToken, agregarJuegoController);
 
-router.delete("/:id", eliminarUnJuegoController);
+router.put("/favoritos/:id", validarToken, gestionarFavoritosController);
+
+router.get(
+  "/favoritos/verificar/:id",
+  validarToken,
+  verificarEstadoFavoritoController,
+);
 
 router.put("/estado/:id", gestionarVisualizacionController);
+
+router.get("/:id", validarToken, obtenerUnJuegoPorStudioController);
+router.put("/:id", editarUnJuegoController);
+router.delete("/:id", eliminarUnJuegoController);
 
 export default router;
