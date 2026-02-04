@@ -48,7 +48,7 @@ export const createPreferenceServicio = async (idUsuario, body) => {
 
         external_reference: String(idUsuario),
 
-        notification_url: `${process.env.URL_FRONTEND}/api/payment/webhook`,
+        notification_url: `${process.env.URL_BACKEND}/api/payment/webhook`,
       },
     });
 
