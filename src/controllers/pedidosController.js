@@ -1,7 +1,9 @@
 import { connectDB } from "../config/configDB.js";
+import { encontrarComprasServices } from "../services/pedidosServices.js";
 
-export const ejemploController = async (req, res) => {
+export const encontrarComprasController = async (req, res) => {
   await connectDB();
-  const { json, statusCode } = await ejemploService();
+  const id = req.idUsuario;
+  const { json, statusCode } = await encontrarComprasServices(id);
   res.status(statusCode).json(json);
 };

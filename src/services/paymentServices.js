@@ -40,15 +40,15 @@ export const createPreferenceServicio = async (idUsuario, body) => {
           currency_id: "ARS",
         })),
         back_urls: {
-          success: `${process.env.URL_FRONTEND}/payment/success`,
-          failure: `${process.env.URL_FRONTEND}/carrito`,
-          pending: `${process.env.URL_FRONTEND}/carrito`,
+          success: `${process.env.URL_FRONTEND}/pago/exitoso/`,
+          failure: `${process.env.URL_FRONTEND}/pago/fallido/`,
+          pending: `${process.env.URL_FRONTEND}/pago/pendiente`,
         },
         auto_return: "approved",
 
         external_reference: String(idUsuario),
 
-        notification_url: `${process.env.URL_FRONTEND}/api/payment/webhook`,
+        notification_url: `${process.env.URL_BACKEND}/api/payment/webhook`,
       },
     });
 
@@ -127,6 +127,7 @@ export const webhookServicio = async (body) => {
       juegos: carrito.juegos.map((j) => ({
         idJuego: j.juegoId?._id,
         titulo: j.juegoId?.titulo || "Juego",
+        imagenPortada: j.juegoId?.imagenPortada || "",
         precio: j.precio,
       })),
       estado: "approved",

@@ -285,3 +285,71 @@ export const sistemaDeBaneoServices = async (id) => {
     };
   }
 };
+
+export const gestionarSeguidoresServices = async (idDestino, idActor) => {
+  try {
+    if (String(idDestino) === String(idActor)) {
+      return {
+        json: { message: "No puedes seguirte a ti mismo" },
+        statusCode: 400,
+      };
+    }
+
+    const usuarioDestino = await usuarioModel.findById(idDestino);
+    if (!usuarioDestino) {
+      return { json: { message: "Usuario no encontrado" }, statusCode: 404 };
+    }
+
+    const yaLoSigue = usuarioDestino.seguidores.some(
+      (id) => String(id) === String(idActor),
+    );
+
+    const accion = yaLoSigue ? "$pull" : "$addToSet";
+
+    const usuarioActualizado = await usuarioModel.findByIdAndUpdate(
+      idDestino,
+      { [accion]: { seguidores: idActor } },
+      { new: true },
+    );
+
+    await usuarioModel.findByIdAndUpdate(idActor, {
+      [accion]: { siguiendo: idDestino },
+    });
+
+    return {
+      json: {
+        message: yaLoSigue
+          ? "Dejaste de seguir al usuario"
+          : "Ahora sigues a este usuario",
+        esSeguidor: !yaLoSigue,
+        cantidadSeguidores: usuarioActualizado.seguidores.length,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error en gestionarSeguidoresServices:", error);
+    return { json: { message: "Error interno" }, statusCode: 500 };
+  }
+};
+
+export const verificarSeguimientoService = async (idDestino, idActor) => {
+  try {
+    const usuarioDestino = await usuarioModel.findById(idDestino);
+
+    if (!usuarioDestino) {
+      return { json: { esSeguidor: false }, statusCode: 404 };
+    }
+
+    const esSeguidor = usuarioDestino.seguidores.some(
+      (id) => String(id) === String(idActor),
+    );
+
+    return {
+      json: { esSeguidor },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error verificando seguimiento:", error);
+    return { json: { esSeguidor: false }, statusCode: 500 };
+  }
+};

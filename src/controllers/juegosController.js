@@ -3,10 +3,12 @@ import {
   agregarJuegoServices,
   editarUnJuegoServices,
   eliminarUnJuegoServices,
+  gestionarFavoritosServices,
   gestionarVisualizacionServices,
   obtenerJuegosPorStudioServices,
   obtenerJuegosServices,
   obtenerUnJuegoPorStudioServices,
+  verificarEstadoFavoritoService,
 } from "../services/juegosServices.js";
 
 export const agregarJuegoController = async (req, res) => {
@@ -59,5 +61,30 @@ export const gestionarVisualizacionController = async (req, res) => {
   await connectDB();
   const { id } = req.params;
   const { json, statusCode } = await gestionarVisualizacionServices(id);
+  res.status(statusCode).json(json);
+};
+
+export const gestionarFavoritosController = async (req, res) => {
+  await connectDB();
+
+  const { id } = req.params;
+  const idUsuario = req.idUsuario;
+
+  const { json, statusCode } = await gestionarFavoritosServices(id, idUsuario);
+
+  res.status(statusCode).json(json);
+};
+
+export const verificarEstadoFavoritoController = async (req, res) => {
+  await connectDB();
+
+  const { id } = req.params;
+  const idUsuario = req.idUsuario;
+
+  const { json, statusCode } = await verificarEstadoFavoritoService(
+    id,
+    idUsuario,
+  );
+
   res.status(statusCode).json(json);
 };
