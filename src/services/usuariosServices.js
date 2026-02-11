@@ -1,7 +1,110 @@
 import { usuarioModel } from "../models/usuariosModel.js";
+import { juegosModel } from "../models/juegosModel.js";
 import { carritoModel } from "../models/carritoModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+
+export const guardarFavoritosServices = async (idJuego, idUsuario) => {
+  try {
+    const juego = await juegosModel.findById(idJuego);
+    const usuario = await usuarioModel.findById(idUsuario);
+
+    if (!juego || !usuario) {
+      return {
+        json: { message: "Juego o usuario no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    const esFavorito = usuario.juegosDeseados.includes(idJuego);
+
+    if (esFavorito) {
+      usuario.juegosDeseados.pull(idJuego);
+      juego.usuarios_likes.pull(idUsuario);
+      await Promise.all([usuario.save(), juego.save()]);
+
+      return {
+        json: {
+          message: "Eliminado de favoritos",
+          esFavorito: false,
+          cantidadFavoritos: juego.usuarios_likes.length,
+        },
+        statusCode: 200,
+      };
+    } else {
+      usuario.juegosDeseados.push(idJuego);
+      juego.usuarios_likes.push(idUsuario);
+      await Promise.all([usuario.save(), juego.save()]);
+
+      return {
+        json: {
+          message: "Agregado a favoritos",
+          esFavorito: true,
+          cantidadFavoritos: juego.usuarios_likes.length,
+        },
+        statusCode: 200,
+      };
+    }
+  } catch (error) {
+    console.error(error);
+    return {
+      json: { message: "Error en el servidor" },
+      statusCode: 500,
+    };
+  }
+};
+
+export const verificarFavoritoService = async (idJuego, idUsuario) => {
+  try {
+    const usuario = await usuarioModel.findById(idUsuario);
+    if (!usuario) {
+      return {
+        json: { message: "Usuario no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    const esFavorito = usuario.juegosDeseados.includes(idJuego);
+    return {
+      json: { esFavorito },
+      statusCode: 200,
+    };
+  } catch (error) {
+    return {
+      json: { message: "Error al verificar" },
+      statusCode: 500,
+    };
+  }
+};
+
+export const obtenerJuegosFavoritosServices = async (idUsuario) => {
+  try {
+    const usuario = await usuarioModel
+      .findById(idUsuario)
+      .populate("juegosDeseados");
+
+    if (!usuario) {
+      return {
+        json: { message: "Usuario no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    return {
+      json: {
+        message: "Juegos favoritos obtenidos correctamente",
+        datos: usuario.juegosDeseados,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error al obtener los juegos favoritos", error);
+    return {
+      json: { message: "Error interno del servidor" },
+      statusCode: 500,
+    };
+  }
+};
 
 export const obtenerUsuariosServices = async () => {
   try {
@@ -37,12 +140,6 @@ export const registerServices = async (datos) => {
         },
         statusCode: 400,
       };
-    if (existe) {
-      return {
-        json: { message: "El usuario ya existe" },
-        statusCode: 400,
-      };
-    }
 
     const salt = await bcrypt.genSalt(10);
     const passwordHasheada = await bcrypt.hash(datos.password, salt);
