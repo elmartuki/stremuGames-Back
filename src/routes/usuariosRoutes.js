@@ -3,6 +3,8 @@ import {
   borrarUsuarioController,
   editarUsuarioController,
   gestionarSeguidoresController,
+  guardarFavoritosController,
+  verificarFavoritoController,
   loginController,
   obtenerJuegosCompradosController,
   obtenerUnUsuarioController,
@@ -10,6 +12,7 @@ import {
   registrarUsuarioController,
   sistemaDeBaneoController,
   verificarSeguimientoController,
+  obtenerJuegosFavoritosController,
 } from "../controllers/usuariosController.js";
 import { validarToken } from "../middlewares/auth.middlewares.js";
 
@@ -21,9 +24,23 @@ router.get("/biblioteca", validarToken, obtenerJuegosCompradosController);
 
 router.post("/login", loginController);
 
+router.put("/favoritos/:id", validarToken, guardarFavoritosController);
+
+router.get(
+  "/favoritos/verificar/:id",
+  validarToken,
+  verificarFavoritoController,
+);
+
 router.get("/", obtenerUsuariosController);
 
 router.get("/:id", obtenerUnUsuarioController);
+
+router.get(
+  "/obtener-favoritos/:id",
+  validarToken,
+  obtenerJuegosFavoritosController,
+);
 
 router.put("/seguir/:id", validarToken, gestionarSeguidoresController);
 

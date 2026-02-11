@@ -59,6 +59,8 @@ const juegosSchema = new Schema(
           "Terror",
           "Indie",
           "Sci-Fi",
+          "Shooter",
+          "Lucha",
         ],
       },
     ],

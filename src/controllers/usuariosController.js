@@ -3,6 +3,8 @@ import {
   borrarUsuarioServices,
   editarUsuarioServices,
   gestionarSeguidoresServices,
+  guardarFavoritosServices,
+  verificarFavoritoService,
   loginServices,
   obtenerJuegosCompradosServices,
   obtenerUnUsuarioServices,
@@ -10,6 +12,7 @@ import {
   registerServices,
   sistemaDeBaneoServices,
   verificarSeguimientoService,
+  obtenerJuegosFavoritosServices,
 } from "../services/usuariosServices.js";
 
 export const obtenerUsuariosController = async (req, res) => {
@@ -26,6 +29,13 @@ export const obtenerUnUsuarioController = async (req, res) => {
   res.status(statusCode).json(json);
 };
 
+export const obtenerJuegosFavoritosController = async (req, res) => {
+  await connectDB();
+  const { id } = req.params;
+  const { json, statusCode } = await obtenerJuegosFavoritosServices(id);
+  res.status(statusCode).json(json);
+};
+
 export const editarUsuarioController = async (req, res) => {
   await connectDB();
   const { id } = req.params;
@@ -33,12 +43,14 @@ export const editarUsuarioController = async (req, res) => {
   const { json, statusCode } = await editarUsuarioServices(id, data);
   res.status(statusCode).json(json);
 };
+
 export const borrarUsuarioController = async (req, res) => {
   await connectDB();
   const { id } = req.params;
   const { json, statusCode } = await borrarUsuarioServices(id);
   res.status(statusCode).json(json);
 };
+
 export const registrarUsuarioController = async (req, res) => {
   await connectDB();
   const datos = req.body;
@@ -85,6 +97,24 @@ export const verificarSeguimientoController = async (req, res) => {
   const idUsuario = req.idUsuario;
 
   const { json, statusCode } = await verificarSeguimientoService(id, idUsuario);
+
+  res.status(statusCode).json(json);
+};
+
+export const guardarFavoritosController = async (req, res) => {
+  const { id } = req.params;
+  const idUsuario = req.idUsuario;
+
+  const { json, statusCode } = await guardarFavoritosServices(id, idUsuario);
+
+  res.status(statusCode).json(json);
+};
+
+export const verificarFavoritoController = async (req, res) => {
+  const { id } = req.params;
+  const idUsuario = req.idUsuario;
+
+  const { json, statusCode } = await verificarFavoritoService(id, idUsuario);
 
   res.status(statusCode).json(json);
 };
