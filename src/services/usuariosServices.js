@@ -211,6 +211,8 @@ export const loginServices = async (datos) => {
       {
         id: usuario._id,
         rol: usuario.rol,
+        nombreUsuario: usuario.nombreUsuario,
+        email: usuario.email,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" },
@@ -224,6 +226,7 @@ export const loginServices = async (datos) => {
         usuario: {
           id: usuario._id,
           nombreUsuario: usuario.nombreUsuario,
+          email: usuario.email,
           rol: usuario.rol,
           foto_de_perfil: usuario.foto_de_perfil,
         },
