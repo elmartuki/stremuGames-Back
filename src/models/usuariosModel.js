@@ -39,9 +39,16 @@ const usuarioSchema = new mongoose.Schema(
 
     biografia: {
       type: String,
-      maxlength: 160,
+      maxlength: 300,
       default: "",
     },
+
+    seguidores: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "usuarios",
+      },
+    ],
 
     rol: {
       type: String,

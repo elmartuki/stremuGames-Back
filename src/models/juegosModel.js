@@ -4,6 +4,11 @@ const { Schema } = mongoose;
 
 const juegosSchema = new Schema(
   {
+    mostrar: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
     titulo: {
       type: String,
       required: true,
@@ -18,7 +23,6 @@ const juegosSchema = new Schema(
       unique: true,
       lowercase: true,
     },
-
     precioBase: {
       type: Number,
       required: true,
@@ -29,17 +33,18 @@ const juegosSchema = new Schema(
       default: 0,
       min: 0,
     },
-
     imagenPortada: {
       type: String,
       required: true,
     },
-
+    imagenBanner: {
+      type: String,
+      required: true,
+    },
     galeria: {
       type: [String],
       default: [],
     },
-
     categorias: [
       {
         type: String,
@@ -54,6 +59,8 @@ const juegosSchema = new Schema(
           "Terror",
           "Indie",
           "Sci-Fi",
+          "Shooter",
+          "Lucha",
         ],
       },
     ],
@@ -63,10 +70,12 @@ const juegosSchema = new Schema(
       type: String,
       required: true,
     },
+
     studioId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "usuarios",
     },
+
     fechaLanzamiento: {
       type: Date,
       default: Date.now,
@@ -79,15 +88,18 @@ const juegosSchema = new Schema(
       type: Number,
     },
 
-    promedioCalificacion: {
-      type: Number,
-      default: 0,
-      index: true,
-    },
-    cantidadVotos: {
+    cantidadFavoritos: {
       type: Number,
       default: 0,
     },
+
+    usuarios_likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "usuarios",
+      },
+    ],
+
     descargasTotales: {
       type: Number,
       default: 0,

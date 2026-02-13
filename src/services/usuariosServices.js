@@ -1,7 +1,111 @@
 import { usuarioModel } from "../models/usuariosModel.js";
+import { juegosModel } from "../models/juegosModel.js";
 import { carritoModel } from "../models/carritoModel.js";
+import admin from "../config/FireBase.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+
+export const guardarFavoritosServices = async (idJuego, idUsuario) => {
+  try {
+    const juego = await juegosModel.findById(idJuego);
+    const usuario = await usuarioModel.findById(idUsuario);
+
+    if (!juego || !usuario) {
+      return {
+        json: { message: "Juego o usuario no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    const esFavorito = usuario.juegosDeseados.includes(idJuego);
+
+    if (esFavorito) {
+      usuario.juegosDeseados.pull(idJuego);
+      juego.usuarios_likes.pull(idUsuario);
+      await Promise.all([usuario.save(), juego.save()]);
+
+      return {
+        json: {
+          message: "Eliminado de favoritos",
+          esFavorito: false,
+          cantidadFavoritos: juego.usuarios_likes.length,
+        },
+        statusCode: 200,
+      };
+    } else {
+      usuario.juegosDeseados.push(idJuego);
+      juego.usuarios_likes.push(idUsuario);
+      await Promise.all([usuario.save(), juego.save()]);
+
+      return {
+        json: {
+          message: "Agregado a favoritos",
+          esFavorito: true,
+          cantidadFavoritos: juego.usuarios_likes.length,
+        },
+        statusCode: 200,
+      };
+    }
+  } catch (error) {
+    console.error(error);
+    return {
+      json: { message: "Error en el servidor" },
+      statusCode: 500,
+    };
+  }
+};
+
+export const verificarFavoritoService = async (idJuego, idUsuario) => {
+  try {
+    const usuario = await usuarioModel.findById(idUsuario);
+    if (!usuario) {
+      return {
+        json: { message: "Usuario no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    const esFavorito = usuario.juegosDeseados.includes(idJuego);
+    return {
+      json: { esFavorito },
+      statusCode: 200,
+    };
+  } catch (error) {
+    return {
+      json: { message: "Error al verificar" },
+      statusCode: 500,
+    };
+  }
+};
+
+export const obtenerJuegosFavoritosServices = async (idUsuario) => {
+  try {
+    const usuario = await usuarioModel
+      .findById(idUsuario)
+      .populate("juegosDeseados");
+
+    if (!usuario) {
+      return {
+        json: { message: "Usuario no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    return {
+      json: {
+        message: "Juegos favoritos obtenidos correctamente",
+        datos: usuario.juegosDeseados,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error al obtener los juegos favoritos", error);
+    return {
+      json: { message: "Error interno del servidor" },
+      statusCode: 500,
+    };
+  }
+};
 
 export const obtenerUsuariosServices = async () => {
   try {
@@ -37,20 +141,26 @@ export const registerServices = async (datos) => {
         },
         statusCode: 400,
       };
-    if (existe) {
-      return {
-        json: { message: "El usuario ya existe" },
-        statusCode: 400,
-      };
-    }
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHasheada = await bcrypt.hash(datos.password, salt);
+    let passwordHasheada = "";
+
+    if (datos.password) {
+      const salt = await bcrypt.genSalt(10);
+      passwordHasheada = await bcrypt.hash(datos.password, salt);
+    } else {
+      const passwordAleatoria =
+        Math.random().toString(36).slice(-8) +
+        Math.random().toString(36).slice(-8);
+      const salt = await bcrypt.genSalt(10);
+      passwordHasheada = await bcrypt.hash(passwordAleatoria, salt);
+    }
 
     const usuarioDB = new usuarioModel({
       nombreUsuario: datos.nombreUsuario,
       email: datos.email,
       password: passwordHasheada,
+      foto_de_perfil: datos.foto_de_perfil || "",
+      rol: datos.rol,
     });
 
     await usuarioDB.save();
@@ -63,8 +173,29 @@ export const registerServices = async (datos) => {
 
     await nuevoCarrito.save();
 
+    const token = jwt.sign(
+      {
+        id: usuarioDB._id,
+        rol: usuarioDB.rol,
+        nombreUsuario: usuarioDB.nombreUsuario,
+        email: usuarioDB.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" },
+    );
+
     return {
-      json: { message: "Registrado con éxito" },
+      json: {
+        message: "Registrado con éxito",
+        token,
+        usuario: {
+          id: usuarioDB._id,
+          nombreUsuario: usuarioDB.nombreUsuario,
+          email: usuarioDB.email,
+          rol: usuarioDB.rol,
+          foto_de_perfil: usuarioDB.foto_de_perfil,
+        },
+      },
       statusCode: 201,
     };
   } catch (error) {
@@ -78,34 +209,60 @@ export const registerServices = async (datos) => {
 
 export const loginServices = async (datos) => {
   try {
-    const { usuario_email, password } = datos;
+    let usuario;
 
-    if (!usuario_email || !password) {
-      return {
-        statusCode: 400,
-        json: { message: "Todos los campos son obligatorios" },
-      };
+    if (datos.token) {
+      try {
+        const decodedToken = await admin.auth().verifyIdToken(datos.token);
+        const { email } = decodedToken;
+
+        usuario = await usuarioModel.findOne({ email });
+
+        if (!usuario) {
+          return {
+            statusCode: 404,
+            json: {
+              message: "Usuario no registrado. Por favor regístrate primero.",
+            },
+          };
+        }
+      } catch (error) {
+        return {
+          statusCode: 401,
+          json: { message: "Token de Google inválido o expirado" },
+        };
+      }
+    } else {
+      const { usuario_email, password } = datos;
+
+      if (!usuario_email || !password) {
+        return {
+          statusCode: 400,
+          json: { message: "Todos los campos son obligatorios" },
+        };
+      }
+
+      usuario = await usuarioModel
+        .findOne({
+          $or: [{ email: usuario_email }, { nombreUsuario: usuario_email }],
+        })
+        .select("+password");
+
+      if (usuario) {
+        const passwordValida = await bcrypt.compare(password, usuario.password);
+        if (!passwordValida) {
+          return {
+            statusCode: 401,
+            json: { message: "Credenciales inválidas" },
+          };
+        }
+      }
     }
-
-    const usuario = await usuarioModel
-      .findOne({
-        $or: [{ email: usuario_email }, { nombreUsuario: usuario_email }],
-      })
-      .select("+password");
 
     if (!usuario || !usuario.activo) {
       return {
         statusCode: 401,
-        json: { message: "Credenciales inválidas" },
-      };
-    }
-
-    const passwordValida = await bcrypt.compare(password, usuario.password);
-
-    if (!passwordValida) {
-      return {
-        statusCode: 401,
-        json: { message: "Credenciales inválidas" },
+        json: { message: "Credenciales inválidas o cuenta inactiva" },
       };
     }
 
@@ -113,9 +270,11 @@ export const loginServices = async (datos) => {
       {
         id: usuario._id,
         rol: usuario.rol,
+        nombreUsuario: usuario.nombreUsuario,
+        email: usuario.email,
       },
       process.env.JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     return {
@@ -126,6 +285,7 @@ export const loginServices = async (datos) => {
         usuario: {
           id: usuario._id,
           nombreUsuario: usuario.nombreUsuario,
+          email: usuario.email,
           rol: usuario.rol,
           foto_de_perfil: usuario.foto_de_perfil,
         },
@@ -225,8 +385,6 @@ export const borrarUsuarioServices = async (id) => {
   }
 };
 
-
-
 export const obtenerJuegosCompradosServices = async (idUsuario) => {
   const usuario = await usuarioModel
     .findById(idUsuario)
@@ -245,4 +403,112 @@ export const obtenerJuegosCompradosServices = async (idUsuario) => {
       juegos: usuario.juegosComprados,
     },
   };
+};
+
+export const sistemaDeBaneoServices = async (id) => {
+  try {
+    const usuario = await usuarioModel.findById(id);
+
+    if (!usuario) {
+      return {
+        json: { message: "Usuario no encontrado" },
+        statusCode: 404,
+      };
+    }
+
+    if (usuario.rol === "admin") {
+      return {
+        json: { message: "No puedes banear a un administrador" },
+        statusCode: 403,
+      };
+    }
+
+    usuario.activo = !usuario.activo;
+
+    const usuarioActualizado = await usuario.save();
+
+    const accion = usuarioActualizado.activo ? "desbaneado" : "baneado";
+
+    return {
+      json: {
+        message: `Usuario ${accion} exitosamente`,
+        datos: usuarioActualizado,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error en sistemaDeBaneo:", error);
+    return {
+      json: { message: "Error interno del servidor: " + error.message },
+      statusCode: 500,
+    };
+  }
+};
+
+export const gestionarSeguidoresServices = async (idDestino, idActor) => {
+  try {
+    if (String(idDestino) === String(idActor)) {
+      return {
+        json: { message: "No puedes seguirte a ti mismo" },
+        statusCode: 400,
+      };
+    }
+
+    const usuarioDestino = await usuarioModel.findById(idDestino);
+    if (!usuarioDestino) {
+      return { json: { message: "Usuario no encontrado" }, statusCode: 404 };
+    }
+
+    const yaLoSigue = usuarioDestino.seguidores.some(
+      (id) => String(id) === String(idActor),
+    );
+
+    const accion = yaLoSigue ? "$pull" : "$addToSet";
+
+    const usuarioActualizado = await usuarioModel.findByIdAndUpdate(
+      idDestino,
+      { [accion]: { seguidores: idActor } },
+      { new: true },
+    );
+
+    await usuarioModel.findByIdAndUpdate(idActor, {
+      [accion]: { siguiendo: idDestino },
+    });
+
+    return {
+      json: {
+        message: yaLoSigue
+          ? "Dejaste de seguir al usuario"
+          : "Ahora sigues a este usuario",
+        esSeguidor: !yaLoSigue,
+        cantidadSeguidores: usuarioActualizado.seguidores.length,
+      },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error en gestionarSeguidoresServices:", error);
+    return { json: { message: "Error interno" }, statusCode: 500 };
+  }
+};
+
+export const verificarSeguimientoService = async (idDestino, idActor) => {
+  try {
+    const usuarioDestino = await usuarioModel.findById(idDestino);
+
+    if (!usuarioDestino) {
+      return { json: { esSeguidor: false }, statusCode: 404 };
+    }
+
+    const esSeguidor = usuarioDestino.seguidores.some(
+      (id) => String(id) === String(idActor),
+    );
+
+    return {
+      json: { esSeguidor },
+      statusCode: 200,
+    };
+  } catch (error) {
+    console.error("Error verificando seguimiento:", error);
+    return { json: { esSeguidor: false }, statusCode: 500 };
+  }
 };

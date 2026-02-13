@@ -14,11 +14,12 @@ const PedidoSchema = new mongoose.Schema(
         idJuego: { type: mongoose.Schema.Types.ObjectId, ref: "juegos" },
         titulo: String,
         precio: Number,
+        imagenPortada: String,
       },
     ],
     estado: { type: String, default: "approved" },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const PedidoModel = mongoose.model("pedidos", PedidoSchema);
