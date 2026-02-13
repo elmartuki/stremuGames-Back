@@ -7,7 +7,7 @@ export const validarToken = (req, res, next) => {
     if (!tokenCompleto || !tokenCompleto.startsWith("Bearer ")) {
       return res
         .status(401)
-        .json({ message: "Acceso denegado. Token no proporcionado." });
+        .json({ message: "Acceso denegado. Debes iniciar sesión." });
     }
 
     const token = tokenCompleto.split(" ")[1];
