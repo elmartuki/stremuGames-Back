@@ -1,6 +1,7 @@
 import { usuarioModel } from "../models/usuariosModel.js";
 import { juegosModel } from "../models/juegosModel.js";
 import { carritoModel } from "../models/carritoModel.js";
+import admin from "../config/FireBase.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
@@ -141,13 +142,24 @@ export const registerServices = async (datos) => {
         statusCode: 400,
       };
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHasheada = await bcrypt.hash(datos.password, salt);
+    let passwordHasheada = "";
+
+    if (datos.password) {
+      const salt = await bcrypt.genSalt(10);
+      passwordHasheada = await bcrypt.hash(datos.password, salt);
+    } else {
+      const passwordAleatoria =
+        Math.random().toString(36).slice(-8) +
+        Math.random().toString(36).slice(-8);
+      const salt = await bcrypt.genSalt(10);
+      passwordHasheada = await bcrypt.hash(passwordAleatoria, salt);
+    }
 
     const usuarioDB = new usuarioModel({
       nombreUsuario: datos.nombreUsuario,
       email: datos.email,
       password: passwordHasheada,
+      foto_de_perfil: datos.foto_de_perfil || "",
       rol: datos.rol,
     });
 
@@ -161,8 +173,29 @@ export const registerServices = async (datos) => {
 
     await nuevoCarrito.save();
 
+    const token = jwt.sign(
+      {
+        id: usuarioDB._id,
+        rol: usuarioDB.rol,
+        nombreUsuario: usuarioDB.nombreUsuario,
+        email: usuarioDB.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" },
+    );
+
     return {
-      json: { message: "Registrado con éxito" },
+      json: {
+        message: "Registrado con éxito",
+        token,
+        usuario: {
+          id: usuarioDB._id,
+          nombreUsuario: usuarioDB.nombreUsuario,
+          email: usuarioDB.email,
+          rol: usuarioDB.rol,
+          foto_de_perfil: usuarioDB.foto_de_perfil,
+        },
+      },
       statusCode: 201,
     };
   } catch (error) {
@@ -176,34 +209,60 @@ export const registerServices = async (datos) => {
 
 export const loginServices = async (datos) => {
   try {
-    const { usuario_email, password } = datos;
+    let usuario;
 
-    if (!usuario_email || !password) {
-      return {
-        statusCode: 400,
-        json: { message: "Todos los campos son obligatorios" },
-      };
+    if (datos.token) {
+      try {
+        const decodedToken = await admin.auth().verifyIdToken(datos.token);
+        const { email } = decodedToken;
+
+        usuario = await usuarioModel.findOne({ email });
+
+        if (!usuario) {
+          return {
+            statusCode: 404,
+            json: {
+              message: "Usuario no registrado. Por favor regístrate primero.",
+            },
+          };
+        }
+      } catch (error) {
+        return {
+          statusCode: 401,
+          json: { message: "Token de Google inválido o expirado" },
+        };
+      }
+    } else {
+      const { usuario_email, password } = datos;
+
+      if (!usuario_email || !password) {
+        return {
+          statusCode: 400,
+          json: { message: "Todos los campos son obligatorios" },
+        };
+      }
+
+      usuario = await usuarioModel
+        .findOne({
+          $or: [{ email: usuario_email }, { nombreUsuario: usuario_email }],
+        })
+        .select("+password");
+
+      if (usuario) {
+        const passwordValida = await bcrypt.compare(password, usuario.password);
+        if (!passwordValida) {
+          return {
+            statusCode: 401,
+            json: { message: "Credenciales inválidas" },
+          };
+        }
+      }
     }
-
-    const usuario = await usuarioModel
-      .findOne({
-        $or: [{ email: usuario_email }, { nombreUsuario: usuario_email }],
-      })
-      .select("+password");
 
     if (!usuario || !usuario.activo) {
       return {
         statusCode: 401,
-        json: { message: "Credenciales inválidas" },
-      };
-    }
-
-    const passwordValida = await bcrypt.compare(password, usuario.password);
-
-    if (!passwordValida) {
-      return {
-        statusCode: 401,
-        json: { message: "Credenciales inválidas" },
+        json: { message: "Credenciales inválidas o cuenta inactiva" },
       };
     }
 

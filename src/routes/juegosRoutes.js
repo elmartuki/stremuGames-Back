@@ -28,7 +28,7 @@ router.get(
 
 router.put("/estado/:id", gestionarVisualizacionController);
 
-router.get("/:id", validarToken, obtenerUnJuegoPorStudioController);
+router.get("/:id", obtenerUnJuegoPorStudioController);
 router.put("/:id", editarUnJuegoController);
 router.delete("/:id", eliminarUnJuegoController);
 
