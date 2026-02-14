@@ -13,6 +13,9 @@ import {
   sistemaDeBaneoServices,
   verificarSeguimientoService,
   obtenerJuegosFavoritosServices,
+  recuperarContraseniaService,
+  cambiarContraseniaService,
+  verificarCodigoService,
 } from "../services/usuariosServices.js";
 
 export const obtenerUsuariosController = async (req, res) => {
@@ -48,6 +51,35 @@ export const borrarUsuarioController = async (req, res) => {
   await connectDB();
   const { id } = req.params;
   const { json, statusCode } = await borrarUsuarioServices(id);
+  res.status(statusCode).json(json);
+};
+
+export const verificarCodigoController = async (req, res) => {
+  await connectDB();
+  const { email, codigo } = req.body;
+
+  const { json, statusCode } = await verificarCodigoService(email, codigo);
+
+  res.status(statusCode).json(json);
+};
+
+export const recuperarContraseniaController = async (req, res) => {
+  await connectDB();
+  const { email } = req.body;
+  const { json, statusCode } = await recuperarContraseniaService(email);
+  res.status(statusCode).json(json);
+};
+
+export const cambiarContraseniaController = async (req, res) => {
+  await connectDB();
+  const { email, codigo, nuevaPassword } = req.body;
+
+  const { json, statusCode } = await cambiarContraseniaService(
+    email,
+    codigo,
+    nuevaPassword,
+  );
+
   res.status(statusCode).json(json);
 };
 

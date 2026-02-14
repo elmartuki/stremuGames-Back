@@ -4,6 +4,18 @@ import { carritoModel } from "../models/carritoModel.js";
 import admin from "../config/FireBase.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
+import { google } from "googleapis";
+
+const oAuth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "https://developers.google.com/oauthplayground",
+);
+
+oAuth2Client.setCredentials({
+  refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+});
 
 export const guardarFavoritosServices = async (idJuego, idUsuario) => {
   try {
@@ -510,5 +522,176 @@ export const verificarSeguimientoService = async (idDestino, idActor) => {
   } catch (error) {
     console.error("Error verificando seguimiento:", error);
     return { json: { esSeguidor: false }, statusCode: 500 };
+  }
+};
+
+export const recuperarContraseniaService = async (email) => {
+  try {
+    const usuario = await usuarioModel.findOne({ email });
+    if (!usuario) {
+      return {
+        statusCode: 404,
+        json: {
+          message: "No existe ninguna cuenta registrada con este correo.",
+        },
+      };
+    }
+    const codigoDeRecuperacion = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+    usuario.codigoRecuperacion = codigoDeRecuperacion;
+    usuario.expiracionCodigo = new Date(Date.now() + 15 * 60 * 1000);
+    await usuario.save();
+    const accessToken = await oAuth2Client.getAccessToken();
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        type: "OAuth2",
+        user: "stremusoporte@gmail.com",
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+        accessToken: accessToken,
+      },
+    });
+
+    const mailOptions = {
+      from: `Soporte StremuGames <stremusoporte@gmail.com>`,
+      to: email,
+      subject: `🔒 Código de Recuperación - StremuGames`,
+      html: `
+        <div style="background-color: #09090b; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px 20px; color: #ffffff;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #121212; border: 1px solid #27272a; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            
+            <div style="padding: 30px; text-align: center; border-bottom: 1px solid #27272a;">
+              <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px;">CÓDIGO DE RECUPERACIÓN</h2>
+              <p style="margin: 5px 0 0 0; color: #84cc16; font-size: 14px; font-weight: 600; letter-spacing: 1px;">STREMU GAMES</p>
+            </div>
+
+            <div style="padding: 30px; text-align: center;">
+              <p style="color: #e4e4e7; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+                Hola <strong>${usuario.nombreUsuario}</strong>,<br><br>
+                Recibimos una solicitud para restablecer tu contraseña. Usa el siguiente código para continuar con el proceso:
+              </p>
+
+              <div style="display: inline-block; background-color: #18181b; border: 2px dashed #84cc16; padding: 15px 30px; border-radius: 8px; margin-bottom: 20px;">
+                <h1 style="margin: 0; font-size: 36px; color: #84cc16; letter-spacing: 5px;">${codigoDeRecuperacion}</h1>
+              </div>
+
+              <p style="color: #71717a; font-size: 13px; margin-top: 15px;">
+                Este código expirará en 15 minutos por motivos de seguridad.<br>
+                Si no fuiste tú quien solicitó este cambio, ignora este correo.
+              </p>
+            </div>
+
+            <div style="background-color: #0c0c0c; padding: 15px; text-align: center; border-top: 1px solid #27272a;">
+              <p style="margin: 0; color: #52525b; font-size: 12px;">StremuGames &copy; ${new Date().getFullYear()} - Sistema de Soporte</p>
+            </div>
+
+          </div>
+        </div>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return {
+      statusCode: 200,
+      json: { message: "Te hemos enviado un código de 6 dígitos a tu correo." },
+    };
+  } catch (error) {
+    console.error("Error al enviar correo de recuperación:", error);
+    return {
+      statusCode: 500,
+      json: {
+        message: "Error interno del servidor al intentar enviar el correo.",
+      },
+    };
+  }
+};
+
+export const cambiarContraseniaService = async (email, codigo, nuevaPassword) => {
+  try {
+    const usuario = await usuarioModel.findOne({ email });
+
+    if (!usuario) {
+      return {
+        statusCode: 404,
+        json: { message: "Usuario no encontrado." },
+      };
+    }
+
+    if (!usuario.codigoRecuperacion || usuario.codigoRecuperacion !== codigo) {
+      return {
+        statusCode: 400,
+        json: { message: "El código ingresado es incorrecto." },
+      };
+    }
+
+    if (new Date() > usuario.expiracionCodigo) {
+      return {
+        statusCode: 400,
+        json: { message: "El código ha expirado. Por favor, vuelve al paso anterior y solicita uno nuevo." },
+      };
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHasheada = await bcrypt.hash(nuevaPassword, salt);
+
+    usuario.password = passwordHasheada;
+    usuario.codigoRecuperacion = null;
+    usuario.expiracionCodigo = null;
+
+    await usuario.save();
+
+    return {
+      statusCode: 200,
+      json: { message: "Contraseña actualizada con éxito." },
+    };
+  } catch (error) {
+    console.error("Error al cambiar contraseña:", error);
+    return {
+      statusCode: 500,
+      json: { message: "Error interno del servidor al actualizar la contraseña." },
+    };
+  }
+};
+
+export const verificarCodigoService = async (email, codigo) => {
+  try {
+    const usuario = await usuarioModel.findOne({ email });
+
+    if (!usuario) {
+      return {
+        statusCode: 404,
+        json: { message: "Usuario no encontrado." },
+      };
+    }
+
+    if (!usuario.codigoRecuperacion || usuario.codigoRecuperacion !== codigo) {
+      return {
+        statusCode: 400,
+        json: { message: "El código ingresado es incorrecto." },
+      };
+    }
+
+    if (new Date() > usuario.expiracionCodigo) {
+      return {
+        statusCode: 400,
+        json: { message: "El código ha expirado. Por favor, solicita uno nuevo." },
+      };
+    }
+
+    return {
+      statusCode: 200,
+      json: { message: "Código verificado correctamente." },
+    };
+  } catch (error) {
+    console.error("Error al verificar código:", error);
+    return {
+      statusCode: 500,
+      json: { message: "Error interno del servidor al verificar el código." },
+    };
   }
 };
