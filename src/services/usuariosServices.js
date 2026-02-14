@@ -259,10 +259,20 @@ export const loginServices = async (datos) => {
       }
     }
 
-    if (!usuario || !usuario.activo) {
+    if (!usuario) {
       return {
         statusCode: 401,
-        json: { message: "Credenciales inválidas o cuenta inactiva" },
+        json: { message: "Credenciales inválidas" },
+      };
+    }
+
+    if (usuario.activo === false) {
+      return {
+        statusCode: 403,
+        json: {
+          message:
+            "Tu cuenta fue baneada. Contacta al soporte para más información.",
+        },
       };
     }
 
