@@ -28,8 +28,8 @@ Sigue estos pasos para levantar el proyecto completo en tu entorno local.
     ```
 
 2.  **Configurar Variables de Entorno:**
-    Busca el archivo `.env.example` dentro de la carpeta `back` y cámbiale el nombre a `.env`.
-    > **Nota:** Asegúrate de que las credenciales de conexión dentro del archivo `.env` sean correctas.
+    Este proyecto requiere un archivo .env con credenciales específicas. Para obtenerlo, debes solicitarlo personalmente enviando un correo a: elmartind17@gmail.com.
+    Nota: Una vez recibas el archivo, asegúrate de colocarlo dentro de la carpeta back.
 
 3.  **Instalar Dependencias:**
     Ejecuta el siguiente comando para descargar las librerías necesarias:
