@@ -13,6 +13,9 @@ import {
   sistemaDeBaneoController,
   verificarSeguimientoController,
   obtenerJuegosFavoritosController,
+  recuperarContraseniaController,
+  cambiarContraseniaController,
+  verificarCodigoController,
 } from "../controllers/usuariosController.js";
 import { validarToken } from "../middlewares/auth.middlewares.js";
 
@@ -23,6 +26,12 @@ router.post("/register", registrarUsuarioController);
 router.get("/biblioteca", validarToken, obtenerJuegosCompradosController);
 
 router.post("/login", loginController);
+
+router.post("/verificarCodigo", verificarCodigoController);
+
+router.post("/recuperarContrasenia", recuperarContraseniaController);
+
+router.post("/cambiarContrasenia", cambiarContraseniaController);
 
 router.put("/favoritos/:id", validarToken, guardarFavoritosController);
 
