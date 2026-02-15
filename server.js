@@ -29,4 +29,8 @@ app.use(cors(corsOptions));
 
 app.use("/api", routes);
 
+app.listen(3000, () => {
+  console.log("Servidor corriendo puerto 3000");
+});
+
 export default app;
