@@ -4,6 +4,7 @@ import { carritoModel } from "../models/carritoModel.js";
 import admin from "../config/FireBase.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 export const guardarFavoritosServices = async (idJuego, idUsuario) => {
   try {
@@ -310,9 +311,17 @@ export const loginServices = async (datos) => {
   }
 };
 
-export const obtenerUnUsuarioServices = async (id) => {
+export const obtenerUnUsuarioServices = async (parametro) => {
   try {
-    const usuario = await usuarioModel.findById(id);
+    let consulta = {};
+
+    if (mongoose.Types.ObjectId.isValid(parametro)) {
+      consulta = { _id: parametro };
+    } else {
+      consulta = { nombreUsuario: parametro };
+    }
+
+    const usuario = await usuarioModel.findOne(consulta);
 
     if (!usuario) {
       return {
@@ -331,7 +340,7 @@ export const obtenerUnUsuarioServices = async (id) => {
   } catch (error) {
     console.log("Error al encontrar el usuario", error);
     return {
-      json: { message: "ID inválido o error interno" },
+      json: { message: "Error interno del servidor" },
       statusCode: 500,
     };
   }

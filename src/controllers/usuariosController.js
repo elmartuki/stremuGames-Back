@@ -24,8 +24,8 @@ export const obtenerUsuariosController = async (req, res) => {
 
 export const obtenerUnUsuarioController = async (req, res) => {
   await connectDB();
-  const { id } = req.params;
-  const { json, statusCode } = await obtenerUnUsuarioServices(id);
+  const { nombreUsuario } = req.params;
+  const { json, statusCode } = await obtenerUnUsuarioServices(nombreUsuario);
   res.status(statusCode).json(json);
 };
 
