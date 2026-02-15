@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { google } from "googleapis";
+import mongoose from "mongoose";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -697,7 +698,9 @@ export const verificarCodigoService = async (email, codigo) => {
     if (new Date() > usuario.expiracionCodigo) {
       return {
         statusCode: 400,
-        json: { message: "El código ha expirado. Por favor, solicita uno nuevo." },
+        json: {
+          message: "El código ha expirado. Por favor, solicita uno nuevo.",
+        },
       };
     }
 
