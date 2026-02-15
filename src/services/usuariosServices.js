@@ -371,10 +371,22 @@ export const editarUsuarioServices = async (id, datos) => {
       };
     }
 
+    const token = jwt.sign(
+      {
+        id: usuario._id,
+        rol: usuario.rol,
+        nombreUsuario: usuario.nombreUsuario,
+        email: usuario.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" },
+    );
+
     return {
       json: {
         message: "Usuario actualizado exitosamente",
         datos: usuario,
+        token,
       },
       statusCode: 200,
     };
