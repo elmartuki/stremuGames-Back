@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import { google } from "googleapis";
+import mongoose from "mongoose";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -322,9 +323,17 @@ export const loginServices = async (datos) => {
   }
 };
 
-export const obtenerUnUsuarioServices = async (id) => {
+export const obtenerUnUsuarioServices = async (parametro) => {
   try {
-    const usuario = await usuarioModel.findById(id);
+    let consulta = {};
+
+    if (mongoose.Types.ObjectId.isValid(parametro)) {
+      consulta = { _id: parametro };
+    } else {
+      consulta = { nombreUsuario: parametro };
+    }
+
+    const usuario = await usuarioModel.findOne(consulta);
 
     if (!usuario) {
       return {
@@ -343,7 +352,7 @@ export const obtenerUnUsuarioServices = async (id) => {
   } catch (error) {
     console.log("Error al encontrar el usuario", error);
     return {
-      json: { message: "ID inválido o error interno" },
+      json: { message: "Error interno del servidor" },
       statusCode: 500,
     };
   }
@@ -362,10 +371,22 @@ export const editarUsuarioServices = async (id, datos) => {
       };
     }
 
+    const token = jwt.sign(
+      {
+        id: usuario._id,
+        rol: usuario.rol,
+        nombreUsuario: usuario.nombreUsuario,
+        email: usuario.email,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" },
+    );
+
     return {
       json: {
         message: "Usuario actualizado exitosamente",
         datos: usuario,
+        token,
       },
       statusCode: 200,
     };
@@ -689,7 +710,9 @@ export const verificarCodigoService = async (email, codigo) => {
     if (new Date() > usuario.expiracionCodigo) {
       return {
         statusCode: 400,
-        json: { message: "El código ha expirado. Por favor, solicita uno nuevo." },
+        json: {
+          message: "El código ha expirado. Por favor, solicita uno nuevo.",
+        },
       };
     }
 

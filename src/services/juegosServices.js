@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { juegosModel } from "../models/juegosModel.js";
 import { usuarioModel } from "../models/usuariosModel.js";
 
@@ -62,7 +63,11 @@ export const obtenerJuegosServices = async () => {
 
 export const obtenerUnJuegoPorStudioServices = async (id) => {
   try {
-    const juego = await juegosModel.findById(id);
+    const query = mongoose.Types.ObjectId.isValid(id)
+      ? { _id: id }
+      : { slug: id };
+
+    const juego = await juegosModel.findOne(query);
 
     if (!juego) {
       return {
