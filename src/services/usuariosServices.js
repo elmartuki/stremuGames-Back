@@ -333,7 +333,10 @@ export const obtenerUnUsuarioServices = async (parametro) => {
       consulta = { nombreUsuario: parametro };
     }
 
-    const usuario = await usuarioModel.findOne(consulta);
+    const usuario = await usuarioModel
+      .findOne(consulta)
+      .populate("juegosComprados")
+      .populate("juegosDeseados");
 
     if (!usuario) {
       return {
@@ -490,16 +493,25 @@ export const sistemaDeBaneoServices = async (id) => {
 
 export const gestionarSeguidoresServices = async (idDestino, idActor) => {
   try {
-    if (String(idDestino) === String(idActor)) {
+    let usuarioDestino;
+
+    if (mongoose.Types.ObjectId.isValid(idDestino)) {
+      usuarioDestino = await usuarioModel.findById(idDestino);
+    } else {
+      usuarioDestino = await usuarioModel.findOne({ nombreUsuario: idDestino });
+    }
+
+    if (!usuarioDestino) {
+      return { json: { message: "Usuario no encontrado" }, statusCode: 404 };
+    }
+
+    const usuarioDestinoId = usuarioDestino._id;
+
+    if (String(usuarioDestinoId) === String(idActor)) {
       return {
         json: { message: "No puedes seguirte a ti mismo" },
         statusCode: 400,
       };
-    }
-
-    const usuarioDestino = await usuarioModel.findById(idDestino);
-    if (!usuarioDestino) {
-      return { json: { message: "Usuario no encontrado" }, statusCode: 404 };
     }
 
     const yaLoSigue = usuarioDestino.seguidores.some(
@@ -509,13 +521,13 @@ export const gestionarSeguidoresServices = async (idDestino, idActor) => {
     const accion = yaLoSigue ? "$pull" : "$addToSet";
 
     const usuarioActualizado = await usuarioModel.findByIdAndUpdate(
-      idDestino,
+      usuarioDestinoId,
       { [accion]: { seguidores: idActor } },
-      { new: true },
+      { returnDocument: "after" },
     );
 
     await usuarioModel.findByIdAndUpdate(idActor, {
-      [accion]: { siguiendo: idDestino },
+      [accion]: { siguiendo: usuarioDestinoId },
     });
 
     return {
@@ -536,7 +548,13 @@ export const gestionarSeguidoresServices = async (idDestino, idActor) => {
 
 export const verificarSeguimientoService = async (idDestino, idActor) => {
   try {
-    const usuarioDestino = await usuarioModel.findById(idDestino);
+    let usuarioDestino;
+
+    if (mongoose.Types.ObjectId.isValid(idDestino)) {
+      usuarioDestino = await usuarioModel.findById(idDestino);
+    } else {
+      usuarioDestino = await usuarioModel.findOne({ nombreUsuario: idDestino });
+    }
 
     if (!usuarioDestino) {
       return { json: { esSeguidor: false }, statusCode: 404 };
@@ -642,7 +660,11 @@ export const recuperarContraseniaService = async (email) => {
   }
 };
 
-export const cambiarContraseniaService = async (email, codigo, nuevaPassword) => {
+export const cambiarContraseniaService = async (
+  email,
+  codigo,
+  nuevaPassword,
+) => {
   try {
     const usuario = await usuarioModel.findOne({ email });
 
@@ -663,7 +685,10 @@ export const cambiarContraseniaService = async (email, codigo, nuevaPassword) =>
     if (new Date() > usuario.expiracionCodigo) {
       return {
         statusCode: 400,
-        json: { message: "El código ha expirado. Por favor, vuelve al paso anterior y solicita uno nuevo." },
+        json: {
+          message:
+            "El código ha expirado. Por favor, vuelve al paso anterior y solicita uno nuevo.",
+        },
       };
     }
 
@@ -684,7 +709,9 @@ export const cambiarContraseniaService = async (email, codigo, nuevaPassword) =>
     console.error("Error al cambiar contraseña:", error);
     return {
       statusCode: 500,
-      json: { message: "Error interno del servidor al actualizar la contraseña." },
+      json: {
+        message: "Error interno del servidor al actualizar la contraseña.",
+      },
     };
   }
 };

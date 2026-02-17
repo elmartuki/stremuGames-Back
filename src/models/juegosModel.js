@@ -63,7 +63,7 @@ const juegosSchema = new Schema(
           "Lucha",
           "Plataformas",
           "Sigilo",
-          "Psicologico",
+          "Psicológico",
           "Indie",
         ],
       },
