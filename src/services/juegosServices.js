@@ -21,9 +21,11 @@ export const agregarJuegoServices = async (idUsuario, nuevoJuego) => {
 
     await juegoDB.save();
 
-    await usuarioModel.findByIdAndUpdate(idUsuario, {
-      $push: { juegosSubidos: juegoDB._id },
-    });
+    await usuarioModel.findByIdAndUpdate(
+      idUsuario,
+      { $push: { juegosSubidos: juegoDB._id } },
+      { returnDocument: "after" },
+    );
 
     return {
       json: {
@@ -122,7 +124,7 @@ export const obtenerJuegosPorStudioServices = async (idUsuario) => {
 export const editarUnJuegoServices = async (id, datos) => {
   try {
     const juegoActualizado = await juegosModel.findByIdAndUpdate(id, datos, {
-      new: true,
+      returnDocument: "after",
     });
 
     if (!juegoActualizado) {
@@ -159,15 +161,21 @@ export const eliminarUnJuegoServices = async (id) => {
       };
     }
 
+    if (juegoEliminado.studioId) {
+      await usuarioModel.findByIdAndUpdate(juegoEliminado.studioId, {
+        $pull: { juegosSubidos: id },
+      });
+    }
+
     return {
       json: {
-        message: "Juego eliminado correctamente",
+        message: "Juego eliminado y desvinculado del estudio correctamente",
         datos: juegoEliminado,
       },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error al editar juego:", error);
+    console.error("Error al eliminar juego:", error);
     return {
       json: { message: "Error interno del servidor: " + error.message },
       statusCode: 500,
@@ -232,7 +240,7 @@ export const gestionarFavoritosServices = async (idJuego, idUsuario) => {
       juegoActualizado = await juegosModel.findByIdAndUpdate(
         idJuego,
         { $pull: { usuarios_likes: idUsuario } },
-        { new: true },
+        { returnDocument: "after" },
       );
 
       esFavoritoFinal = false;
@@ -244,7 +252,7 @@ export const gestionarFavoritosServices = async (idJuego, idUsuario) => {
       juegoActualizado = await juegosModel.findByIdAndUpdate(
         idJuego,
         { $addToSet: { usuarios_likes: idUsuario } },
-        { new: true },
+        { returnDocument: "after" },
       );
 
       esFavoritoFinal = true;

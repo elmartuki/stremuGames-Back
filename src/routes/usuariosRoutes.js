@@ -17,34 +17,31 @@ import {
   cambiarContraseniaController,
   verificarCodigoController,
 } from "../controllers/usuariosController.js";
-import { validarToken } from "../middlewares/auth.middlewares.js";
+import {
+  validarToken,
+  validarAdmin,
+  validarPropietarioOAdmin,
+} from "../middlewares/auth.middlewares.js";
 
 const router = Router();
 
 router.post("/register", registrarUsuarioController);
-
-router.get("/biblioteca", validarToken, obtenerJuegosCompradosController);
-
 router.post("/login", loginController);
-
 router.post("/verificarCodigo", verificarCodigoController);
-
 router.post("/recuperarContrasenia", recuperarContraseniaController);
-
 router.post("/cambiarContrasenia", cambiarContraseniaController);
 
-router.put("/favoritos/:id", validarToken, guardarFavoritosController);
+router.get("/biblioteca", validarToken, obtenerJuegosCompradosController);
+router.get("/", obtenerUsuariosController);
+router.get("/:nombreUsuario", obtenerUnUsuarioController);
 
+
+router.put("/favoritos/:id", validarToken, guardarFavoritosController);
 router.get(
   "/favoritos/verificar/:id",
   validarToken,
   verificarFavoritoController,
 );
-
-router.get("/", obtenerUsuariosController);
-
-router.get("/:nombreUsuario", obtenerUnUsuarioController);
-
 router.get(
   "/obtener-favoritos/:id",
   validarToken,
@@ -52,17 +49,19 @@ router.get(
 );
 
 router.put("/seguir/:id", validarToken, gestionarSeguidoresController);
-
 router.get(
   "/seguir/verificar/:id",
   validarToken,
   verificarSeguimientoController,
 );
 
-router.put("/:id", editarUsuarioController);
-
-router.delete("/:id", borrarUsuarioController);
-
-router.put("/banear/:id", sistemaDeBaneoController);
+router.put(
+  "/:id",
+  validarToken,
+  validarPropietarioOAdmin,
+  editarUsuarioController,
+);
+router.delete("/:id", validarToken, validarAdmin, borrarUsuarioController);
+router.put("/banear/:id", validarToken, validarAdmin, sistemaDeBaneoController);
 
 export default router;

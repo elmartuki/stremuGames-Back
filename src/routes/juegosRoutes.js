@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { validarToken } from "../middlewares/auth.middlewares.js";
+import {
+  validarToken,
+  validarAdminOEmpresa,
+  validarPropietarioJuego,
+} from "../middlewares/auth.middlewares.js";
 import {
   agregarJuegoController,
   editarUnJuegoController,
@@ -15,21 +19,43 @@ import {
 const router = Router();
 
 router.get("/", obtenerJuegosController);
+router.get("/:id", obtenerUnJuegoPorStudioController);
+
 router.get("/juegos-subidos", validarToken, obtenerJuegosPorStudioController);
-router.post("/crear", validarToken, agregarJuegoController);
-
 router.put("/favoritos/:id", validarToken, gestionarFavoritosController);
-
 router.get(
   "/favoritos/verificar/:id",
   validarToken,
   verificarEstadoFavoritoController,
 );
 
-router.put("/estado/:id", gestionarVisualizacionController);
+router.post(
+  "/crear",
+  validarToken,
+  validarAdminOEmpresa,
+  agregarJuegoController,
+);
 
-router.get("/:id", obtenerUnJuegoPorStudioController);
-router.put("/:id", editarUnJuegoController);
-router.delete("/:id", eliminarUnJuegoController);
+router.put(
+  "/estado/:id",
+  validarToken,
+  validarAdminOEmpresa,
+  validarPropietarioJuego,
+  gestionarVisualizacionController,
+);
+router.put(
+  "/:id",
+  validarToken,
+  validarAdminOEmpresa,
+  validarPropietarioJuego,
+  editarUnJuegoController,
+);
+router.delete(
+  "/:id",
+  validarToken,
+  validarAdminOEmpresa,
+  validarPropietarioJuego,
+  eliminarUnJuegoController,
+);
 
 export default router;

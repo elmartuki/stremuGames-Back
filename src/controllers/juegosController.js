@@ -13,12 +13,11 @@ import {
 
 export const agregarJuegoController = async (req, res) => {
   await connectDB();
+
   const idUsuario = req.idUsuario;
-  const nuevoJuego = req.body;
-  const { json, statusCode } = await agregarJuegoServices(
-    idUsuario,
-    nuevoJuego,
-  );
+
+  const { json, statusCode } = await agregarJuegoServices(idUsuario, req.body);
+
   res.status(statusCode).json(json);
 };
 
