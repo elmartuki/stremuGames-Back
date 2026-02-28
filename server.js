@@ -28,8 +28,4 @@ app.use(cors(corsOptions));
 
 app.use("/api", routes);
 
-app.listen(3000, () => {
-  console.log("hola");
-});
-
 export default app;

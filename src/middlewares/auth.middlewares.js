@@ -39,7 +39,6 @@ export const validarPropietarioJuego = async (req, res, next) => {
       return res.status(404).json({ message: "Juego no encontrado." });
     }
 
-    // Usamos studioId que es como figura en tu modelo
     const esPropietario = String(juego.studioId) === String(req.idUsuario);
     const esAdmin = req.rol === "admin";
 
