@@ -3,63 +3,51 @@ import { juegosModel } from "../models/juegosModel.js";
 import { usuarioModel } from "../models/usuariosModel.js";
 
 export const agregarJuegoServices = async (idUsuario, nuevoJuego) => {
-  const studio = await usuarioModel.findById(idUsuario);
-
-  if (!studio) {
-    return {
-      json: { message: "No se encontró el estudio" },
-      statusCode: 404,
-    };
-  }
-
   try {
-    const juegoDB = new juegosModel({
+    const studio = await usuarioModel
+      .findById(idUsuario)
+      .select("nombreUsuario");
+
+    if (!studio) {
+      return {
+        json: { message: "No se encontró el estudio" },
+        statusCode: 404,
+      };
+    }
+
+    const juegoDB = await juegosModel.create({
       ...nuevoJuego,
       studioId: idUsuario,
       desarrolladora: studio.nombreUsuario,
     });
 
-    await juegoDB.save();
-
-    await usuarioModel.findByIdAndUpdate(
-      idUsuario,
+    await usuarioModel.updateOne(
+      { _id: idUsuario },
       { $push: { juegosSubidos: juegoDB._id } },
-      { returnDocument: "after" },
     );
 
     return {
       json: {
-        message: "Juego creado y vinculado al estudio correctamente",
+        message: "Juego creado y vinculado correctamente",
         datos: juegoDB,
       },
       statusCode: 201,
     };
   } catch (error) {
-    console.error("Error al agregar juego:", error);
-    return {
-      json: { message: "Error interno al intentar guardar el juego" },
-      statusCode: 500,
-    };
+    return { json: { message: "Error interno del servidor" }, statusCode: 500 };
   }
 };
 
 export const obtenerJuegosServices = async () => {
   try {
-    const juegos = await juegosModel.find({ mostrar: true });
+    const juegos = await juegosModel.find({ mostrar: true }).lean();
 
     return {
-      json: {
-        message: "Juegos obtenidos correctamente",
-        datos: juegos,
-      },
+      json: { message: "Juegos obtenidos correctamente", datos: juegos },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error al obtener juegos:", error);
-    return {
-      json: { message: "Error interno del servidor" },
-      statusCode: 500,
-    };
+    return { json: { message: "Error interno del servidor" }, statusCode: 500 };
   }
 };
 
@@ -68,70 +56,50 @@ export const obtenerUnJuegoPorStudioServices = async (id) => {
     const query = mongoose.Types.ObjectId.isValid(id)
       ? { _id: id }
       : { slug: id };
-
-    const juego = await juegosModel.findOne(query);
+    const juego = await juegosModel.findOne(query).lean();
 
     if (!juego) {
-      return {
-        json: { message: "No se encontro ningun juego." },
-        statusCode: 404,
-      };
+      return { json: { message: "No se encontró el juego" }, statusCode: 404 };
     }
 
     return {
-      json: {
-        message: "Juegos del estudio obtenidos con éxito",
-        datos: juego,
-      },
+      json: { message: "Juego obtenido con éxito", datos: juego },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error al obtener juegos del estudio:", error);
-    return {
-      json: { message: "Error interno del servidor" },
-      statusCode: 500,
-    };
+    return { json: { message: "Error interno del servidor" }, statusCode: 500 };
   }
 };
 
 export const obtenerJuegosPorStudioServices = async (idUsuario) => {
   try {
-    const juegos = await juegosModel.find({ studioId: idUsuario });
+    const juegos = await juegosModel.find({ studioId: idUsuario }).lean();
 
-    if (!juegos || juegos.length === 0) {
+    if (!juegos.length) {
       return {
-        json: { message: "Este estudio aún no tiene juegos publicados" },
+        json: { message: "Este estudio no tiene juegos" },
         statusCode: 404,
       };
     }
 
     return {
-      json: {
-        message: "Juegos del estudio obtenidos con éxito",
-        datos: juegos,
-      },
+      json: { message: "Juegos obtenidos con éxito", datos: juegos },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error al obtener juegos del estudio:", error);
-    return {
-      json: { message: "Error interno del servidor" },
-      statusCode: 500,
-    };
+    return { json: { message: "Error interno del servidor" }, statusCode: 500 };
   }
 };
 
 export const editarUnJuegoServices = async (id, datos) => {
   try {
     const juegoActualizado = await juegosModel.findByIdAndUpdate(id, datos, {
-      returnDocument: "after",
+      new: true,
+      lean: true,
     });
 
     if (!juegoActualizado) {
-      return {
-        json: { message: "El juego no existe" },
-        statusCode: 404,
-      };
+      return { json: { message: "El juego no existe" }, statusCode: 404 };
     }
 
     return {
@@ -142,11 +110,7 @@ export const editarUnJuegoServices = async (id, datos) => {
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error al editar juego:", error);
-    return {
-      json: { message: "Error interno del servidor: " + error.message },
-      statusCode: 500,
-    };
+    return { json: { message: "Error al editar el juego" }, statusCode: 500 };
   }
 };
 
@@ -155,147 +119,96 @@ export const eliminarUnJuegoServices = async (id) => {
     const juegoEliminado = await juegosModel.findByIdAndDelete(id);
 
     if (!juegoEliminado) {
-      return {
-        json: { message: "El juego no existe" },
-        statusCode: 404,
-      };
+      return { json: { message: "El juego no existe" }, statusCode: 404 };
     }
 
     if (juegoEliminado.studioId) {
-      await usuarioModel.findByIdAndUpdate(juegoEliminado.studioId, {
-        $pull: { juegosSubidos: id },
-      });
+      await usuarioModel.updateOne(
+        { _id: juegoEliminado.studioId },
+        { $pull: { juegosSubidos: id } },
+      );
     }
 
     return {
-      json: {
-        message: "Juego eliminado y desvinculado del estudio correctamente",
-        datos: juegoEliminado,
-      },
+      json: { message: "Juego eliminado correctamente", datos: juegoEliminado },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error al eliminar juego:", error);
-    return {
-      json: { message: "Error interno del servidor: " + error.message },
-      statusCode: 500,
-    };
+    return { json: { message: "Error al eliminar el juego" }, statusCode: 500 };
   }
 };
 
 export const gestionarVisualizacionServices = async (id) => {
   try {
-    const juego = await juegosModel.findById(id);
+    const juego = await juegosModel.findByIdAndUpdate(
+      id,
+      [{ $set: { mostrar: { $not: "$mostrar" } } }],
+      { new: true, lean: true },
+    );
 
     if (!juego) {
-      return {
-        json: { message: "No se encontró el juego con ese ID" },
-        statusCode: 404,
-      };
+      return { json: { message: "Juego no encontrado" }, statusCode: 404 };
     }
 
-    juego.mostrar = !juego.mostrar;
-
-    const juegoActualizado = await juego.save();
-
     return {
-      json: {
-        message: "Estado de visualización actualizado con éxito",
-        datos: juegoActualizado,
-      },
+      json: { message: "Estado de visualización actualizado", datos: juego },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error en el servidor:", error);
-    return {
-      json: { message: "Error interno del servidor: " + error.message },
-      statusCode: 500,
-    };
+    return { json: { message: "Error en el servidor" }, statusCode: 500 };
   }
 };
 
 export const gestionarFavoritosServices = async (idJuego, idUsuario) => {
   try {
-    const juego = await juegosModel.findById(idJuego);
+    const juego = await juegosModel.findById(idJuego).select("usuarios_likes");
 
     if (!juego) {
-      return {
-        json: { message: "Juego no encontrado" },
-        statusCode: 404,
-      };
+      return { json: { message: "Juego no encontrado" }, statusCode: 404 };
     }
 
-    const yaTieneLike = juego.usuarios_likes.some(
-      (likeId) => String(likeId) === String(idUsuario),
-    );
+    const yaTieneLike = juego.usuarios_likes.includes(idUsuario);
+    const operador = yaTieneLike ? "$pull" : "$addToSet";
 
-    let juegoActualizado;
-    let esFavoritoFinal;
-
-    if (yaTieneLike) {
-      await usuarioModel.findByIdAndUpdate(idUsuario, {
-        $pull: { favoritos: idJuego },
-      });
-
-      juegoActualizado = await juegosModel.findByIdAndUpdate(
+    const [juegoActualizado] = await Promise.all([
+      juegosModel.findByIdAndUpdate(
         idJuego,
-        { $pull: { usuarios_likes: idUsuario } },
-        { returnDocument: "after" },
-      );
-
-      esFavoritoFinal = false;
-    } else {
-      await usuarioModel.findByIdAndUpdate(idUsuario, {
-        $addToSet: { favoritos: idJuego },
-      });
-
-      juegoActualizado = await juegosModel.findByIdAndUpdate(
-        idJuego,
-        { $addToSet: { usuarios_likes: idUsuario } },
-        { returnDocument: "after" },
-      );
-
-      esFavoritoFinal = true;
-    }
+        { [operador]: { usuarios_likes: idUsuario } },
+        { new: true, lean: true },
+      ),
+      usuarioModel.updateOne(
+        { _id: idUsuario },
+        { [operador]: { favoritos: idJuego } },
+      ),
+    ]);
 
     return {
       json: {
-        message: esFavoritoFinal
-          ? "Agregado a favoritos"
-          : "Eliminado de favoritos",
-        esFavorito: esFavoritoFinal,
+        message: yaTieneLike
+          ? "Eliminado de favoritos"
+          : "Agregado a favoritos",
+        esFavorito: !yaTieneLike,
         cantidadFavoritos: juegoActualizado.usuarios_likes.length,
       },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error favoritos:", error);
-    return {
-      json: { message: "Error interno del servidor" },
-      statusCode: 500,
-    };
+    return { json: { message: "Error interno del servidor" }, statusCode: 500 };
   }
 };
 
 export const verificarEstadoFavoritoService = async (idJuego, idUsuario) => {
   try {
-    const juego = await juegosModel.findById(idJuego);
-
-    if (!juego) {
-      return { json: { esFavorito: false }, statusCode: 404 };
-    }
-
-    const esFavorito = juego.usuarios_likes.some(
-      (likeId) => String(likeId) === String(idUsuario),
-    );
+    const juego = await juegosModel.exists({
+      _id: idJuego,
+      usuarios_likes: idUsuario,
+    });
 
     return {
-      json: { esFavorito },
+      json: { esFavorito: !!juego },
       statusCode: 200,
     };
   } catch (error) {
-    console.error("Error verificando favorito:", error);
-
     return { json: { esFavorito: false }, statusCode: 500 };
   }
 };

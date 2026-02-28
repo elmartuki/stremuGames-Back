@@ -8,17 +8,16 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://192.168.1.40:5173",
-  "http://192.168.1.247:5173",
-  "http://10.241.74.41:5173",
-  "http://192.168.100.12:5173",
-  "https://stremugames.vercel.app",
-];
+const allowedOrigins = [process.env.VITE_IP_FRONT];
 
 const corsOptions = {
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
 };
@@ -28,5 +27,9 @@ app.use(helmet());
 app.use(cors(corsOptions));
 
 app.use("/api", routes);
+
+app.listen(3000, () => {
+  console.log("hola");
+});
 
 export default app;
